@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+
+  recipes     UserRecipe[]
+  extras      UserExtra[]
+  ingredients UserIngredient[]
+  weekPlans   WeekPlan[]
+  favourites  RecipeFavourite[]
+  notes       RecipeNote[]
+}
+
+// Custom recipes added by the user (built-ins live in data/recipes.json)
+model UserRecipe {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name              String
+  labels            String[]
+  cuisine           String?
+  prepTimeISO       String
+  caloriesPerPerson Int
+  recipeYield       Int
+  instructions      String[]
+  ingredients       Json
+  sourceUrl         String?
+  youtubeUrl        String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// Custom extras added by the user (built-ins live in data/extras.json)
+model UserExtra {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  emoji     String
+  category  String
+  items     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Custom ingredients added by the user (built-ins live in data/ingredients.json)
+model UserIngredient {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  defaultUnit String
+  aisle       String
+  createdAt   DateTime @default(now())
+}
+
+// One row per user per week — full week plan stored as JSON
+model WeekPlan {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekStart String   // ISO date YYYY-MM-DD (Monday of that week)
+  planData  Json     // DayPlan[]
+  people    Int      @default(2)
+  days      Int      @default(7)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, weekStart])
+}
+
+// Favourite recipes per user (works for built-in IDs and UserRecipe IDs)
+model RecipeFavourite {
+  userId   String
+  recipeId String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, recipeId])
+}
+
+// Personal notes per user per recipe
+model RecipeNote {
+  userId   String
+  recipeId String
+  note     String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, recipeId])
+}
