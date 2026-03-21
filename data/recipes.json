@@ -1,0 +1,894 @@
+[
+  {
+    "id": "r001",
+    "name": "Grilled Salmon & Quinoa Bowl",
+    "labels": [
+      "healthy"
+    ],
+    "prepTimeISO": "PT30M",
+    "caloriesPerPerson": 480,
+    "recipeYield": 2,
+    "instructions": [
+      "Season salmon fillets with salt, pepper, and lemon zest.",
+      "Heat a grill pan over medium-high heat and brush with oil.",
+      "Grill salmon for 4\u20135 minutes per side until cooked through.",
+      "Meanwhile, cook quinoa in vegetable broth per package directions.",
+      "Steam broccoli and asparagus until tender-crisp, about 5 minutes.",
+      "Assemble bowls: quinoa base, topped with salmon and vegetables.",
+      "Drizzle with a tahini-lemon dressing and serve immediately."
+    ],
+    "ingredients": [
+      {
+        "name": "Salmon fillets",
+        "amount": 2,
+        "unit": "pieces",
+        "aisle": "Seafood",
+        "isStaple": false
+      },
+      {
+        "name": "Quinoa",
+        "amount": 1,
+        "unit": "cup",
+        "aisle": "Grains & Pasta",
+        "isStaple": false
+      },
+      {
+        "name": "Broccoli florets",
+        "amount": 2,
+        "unit": "cups",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Asparagus",
+        "amount": 1,
+        "unit": "bunch",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Lemon",
+        "amount": 1,
+        "unit": "piece",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Tahini",
+        "amount": 2,
+        "unit": "tbsp",
+        "aisle": "Condiments",
+        "isStaple": false
+      },
+      {
+        "name": "Vegetable broth",
+        "amount": 2,
+        "unit": "cups",
+        "aisle": "Canned Goods",
+        "isStaple": false
+      },
+      {
+        "name": "Olive oil",
+        "amount": 1,
+        "unit": "tbsp",
+        "aisle": "Oils & Vinegars",
+        "isStaple": true
+      },
+      {
+        "name": "Salt",
+        "amount": 1,
+        "unit": "tsp",
+        "aisle": "Spices",
+        "isStaple": true
+      },
+      {
+        "name": "Black pepper",
+        "amount": 0.5,
+        "unit": "tsp",
+        "aisle": "Spices",
+        "isStaple": true
+      }
+    ],
+    "cuisine": "American"
+  },
+  {
+    "id": "r002",
+    "name": "Mediterranean Chicken & Veggie Tray",
+    "labels": [
+      "healthy"
+    ],
+    "prepTimeISO": "PT45M",
+    "caloriesPerPerson": 420,
+    "recipeYield": 2,
+    "instructions": [
+      "Preheat oven to 400\u00b0F (200\u00b0C).",
+      "Toss chicken thighs with olive oil, garlic, oregano, and lemon juice.",
+      "Arrange chicken, bell peppers, zucchini, and cherry tomatoes on a sheet pan.",
+      "Roast for 35\u201340 minutes until chicken is golden and cooked through.",
+      "Scatter kalamata olives and crumbled feta over the tray in the last 5 minutes.",
+      "Serve with warm pita or over cauliflower rice."
+    ],
+    "ingredients": [
+      {
+        "name": "Chicken thighs (bone-in)",
+        "amount": 4,
+        "unit": "pieces",
+        "aisle": "Meat & Poultry",
+        "isStaple": false
+      },
+      {
+        "name": "Bell peppers (mixed)",
+        "amount": 2,
+        "unit": "pieces",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Zucchini",
+        "amount": 1,
+        "unit": "piece",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Cherry tomatoes",
+        "amount": 1,
+        "unit": "cup",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Kalamata olives",
+        "amount": 0.5,
+        "unit": "cup",
+        "aisle": "Condiments",
+        "isStaple": false
+      },
+      {
+        "name": "Feta cheese",
+        "amount": 100,
+        "unit": "g",
+        "aisle": "Dairy & Eggs",
+        "isStaple": false
+      },
+      {
+        "name": "Lemon",
+        "amount": 1,
+        "unit": "piece",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Garlic cloves",
+        "amount": 3,
+        "unit": "cloves",
+        "aisle": "Produce",
+        "isStaple": true
+      },
+      {
+        "name": "Dried oregano",
+        "amount": 1,
+        "unit": "tsp",
+        "aisle": "Spices",
+        "isStaple": true
+      },
+      {
+        "name": "Olive oil",
+        "amount": 3,
+        "unit": "tbsp",
+        "aisle": "Oils & Vinegars",
+        "isStaple": true
+      }
+    ],
+    "cuisine": "Mediterranean"
+  },
+  {
+    "id": "r003",
+    "name": "Black Bean & Sweet Potato Tacos",
+    "labels": [
+      "healthy"
+    ],
+    "prepTimeISO": "PT25M",
+    "caloriesPerPerson": 390,
+    "recipeYield": 2,
+    "instructions": [
+      "Preheat oven to 425\u00b0F. Cube sweet potato and toss with cumin and olive oil.",
+      "Roast sweet potato cubes for 20 minutes until caramelized.",
+      "Warm black beans in a small saucepan with garlic and smoked paprika.",
+      "Warm corn tortillas directly over a gas flame or in a dry skillet.",
+      "Assemble tacos: beans, sweet potato, shredded cabbage, and avocado.",
+      "Top with lime juice, fresh cilantro, and a drizzle of hot sauce.",
+      "Serve immediately with lime wedges."
+    ],
+    "ingredients": [
+      {
+        "name": "Sweet potato",
+        "amount": 1,
+        "unit": "large",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Canned black beans",
+        "amount": 1,
+        "unit": "can",
+        "aisle": "Canned Goods",
+        "isStaple": false
+      },
+      {
+        "name": "Corn tortillas",
+        "amount": 6,
+        "unit": "pieces",
+        "aisle": "Bread & Bakery",
+        "isStaple": false
+      },
+      {
+        "name": "Avocado",
+        "amount": 1,
+        "unit": "piece",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Red cabbage",
+        "amount": 1,
+        "unit": "cup",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Lime",
+        "amount": 2,
+        "unit": "pieces",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Fresh cilantro",
+        "amount": 0.25,
+        "unit": "cup",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Smoked paprika",
+        "amount": 1,
+        "unit": "tsp",
+        "aisle": "Spices",
+        "isStaple": true
+      },
+      {
+        "name": "Ground cumin",
+        "amount": 1,
+        "unit": "tsp",
+        "aisle": "Spices",
+        "isStaple": true
+      },
+      {
+        "name": "Olive oil",
+        "amount": 2,
+        "unit": "tbsp",
+        "aisle": "Oils & Vinegars",
+        "isStaple": true
+      }
+    ],
+    "cuisine": "Mexican"
+  },
+  {
+    "id": "r004",
+    "name": "Zucchini Noodles with Pesto & Shrimp",
+    "labels": [
+      "low-carb"
+    ],
+    "prepTimeISO": "PT20M",
+    "caloriesPerPerson": 320,
+    "recipeYield": 2,
+    "instructions": [
+      "Spiralize zucchini into noodles using a spiralizer or vegetable peeler.",
+      "Pat shrimp dry and season with garlic powder, salt, and pepper.",
+      "Heat olive oil in a large skillet over high heat.",
+      "Saut\u00e9 shrimp for 2 minutes per side until pink; remove and set aside.",
+      "Add zucchini noodles to the same skillet and toss for 1\u20132 minutes (don't overcook).",
+      "Remove from heat, toss with basil pesto and cherry tomatoes.",
+      "Return shrimp to pan, toss to combine, and serve with Parmesan."
+    ],
+    "ingredients": [
+      {
+        "name": "Large shrimp (peeled)",
+        "amount": 300,
+        "unit": "g",
+        "aisle": "Seafood",
+        "isStaple": false
+      },
+      {
+        "name": "Zucchini",
+        "amount": 3,
+        "unit": "large",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Basil pesto",
+        "amount": 4,
+        "unit": "tbsp",
+        "aisle": "Condiments",
+        "isStaple": false
+      },
+      {
+        "name": "Cherry tomatoes",
+        "amount": 1,
+        "unit": "cup",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Parmesan (shaved)",
+        "amount": 30,
+        "unit": "g",
+        "aisle": "Dairy & Eggs",
+        "isStaple": false
+      },
+      {
+        "name": "Garlic powder",
+        "amount": 0.5,
+        "unit": "tsp",
+        "aisle": "Spices",
+        "isStaple": true
+      },
+      {
+        "name": "Olive oil",
+        "amount": 2,
+        "unit": "tbsp",
+        "aisle": "Oils & Vinegars",
+        "isStaple": true
+      },
+      {
+        "name": "Salt",
+        "amount": 0.5,
+        "unit": "tsp",
+        "aisle": "Spices",
+        "isStaple": true
+      },
+      {
+        "name": "Black pepper",
+        "amount": 0.25,
+        "unit": "tsp",
+        "aisle": "Spices",
+        "isStaple": true
+      }
+    ],
+    "cuisine": "Italian"
+  },
+  {
+    "id": "r005",
+    "name": "Cauliflower Fried Rice",
+    "labels": [
+      "low-carb"
+    ],
+    "prepTimeISO": "PT20M",
+    "caloriesPerPerson": 290,
+    "recipeYield": 2,
+    "instructions": [
+      "Pulse cauliflower florets in a food processor until rice-sized pieces form.",
+      "Heat sesame oil in a wok or large skillet over high heat.",
+      "Scramble eggs in the pan, then push to the side.",
+      "Add diced carrots, peas, and green onions; stir-fry 3 minutes.",
+      "Add cauliflower rice and stir-fry 4\u20135 minutes until slightly golden.",
+      "Season with soy sauce, ginger, and a dash of white pepper.",
+      "Garnish with sesame seeds and serve immediately."
+    ],
+    "ingredients": [
+      {
+        "name": "Cauliflower head",
+        "amount": 1,
+        "unit": "large",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Eggs",
+        "amount": 3,
+        "unit": "pieces",
+        "aisle": "Dairy & Eggs",
+        "isStaple": false
+      },
+      {
+        "name": "Frozen peas & carrots",
+        "amount": 1,
+        "unit": "cup",
+        "aisle": "Frozen Foods",
+        "isStaple": false
+      },
+      {
+        "name": "Green onions",
+        "amount": 3,
+        "unit": "stalks",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Soy sauce",
+        "amount": 3,
+        "unit": "tbsp",
+        "aisle": "Condiments",
+        "isStaple": false
+      },
+      {
+        "name": "Fresh ginger",
+        "amount": 1,
+        "unit": "tsp",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Sesame seeds",
+        "amount": 1,
+        "unit": "tbsp",
+        "aisle": "Spices",
+        "isStaple": false
+      },
+      {
+        "name": "Sesame oil",
+        "amount": 2,
+        "unit": "tbsp",
+        "aisle": "Oils & Vinegars",
+        "isStaple": true
+      },
+      {
+        "name": "White pepper",
+        "amount": 0.25,
+        "unit": "tsp",
+        "aisle": "Spices",
+        "isStaple": true
+      }
+    ],
+    "cuisine": "Asian"
+  },
+  {
+    "id": "r006",
+    "name": "Lettuce-Wrapped Turkey Burgers",
+    "labels": [
+      "low-carb"
+    ],
+    "prepTimeISO": "PT25M",
+    "caloriesPerPerson": 350,
+    "recipeYield": 2,
+    "instructions": [
+      "Combine ground turkey with diced onion, Worcestershire sauce, garlic, and seasoning.",
+      "Form into 2 burger patties, pressing a dimple in the center.",
+      "Heat a cast-iron pan over medium-high heat with a little oil.",
+      "Cook burgers 5\u20136 minutes per side until internal temp reaches 165\u00b0F.",
+      "Layer toppings: tomato, red onion, avocado, and a dollop of Dijon mustard.",
+      "Wrap each burger in 2\u20133 large iceberg lettuce leaves instead of a bun.",
+      "Serve with a side of sliced cucumber."
+    ],
+    "ingredients": [
+      {
+        "name": "Ground turkey",
+        "amount": 400,
+        "unit": "g",
+        "aisle": "Meat & Poultry",
+        "isStaple": false
+      },
+      {
+        "name": "Iceberg lettuce",
+        "amount": 1,
+        "unit": "head",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Avocado",
+        "amount": 1,
+        "unit": "piece",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Tomato",
+        "amount": 1,
+        "unit": "large",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Red onion",
+        "amount": 0.5,
+        "unit": "piece",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Dijon mustard",
+        "amount": 2,
+        "unit": "tbsp",
+        "aisle": "Condiments",
+        "isStaple": false
+      },
+      {
+        "name": "Worcestershire sauce",
+        "amount": 1,
+        "unit": "tbsp",
+        "aisle": "Condiments",
+        "isStaple": false
+      },
+      {
+        "name": "Cucumber",
+        "amount": 1,
+        "unit": "piece",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Garlic powder",
+        "amount": 1,
+        "unit": "tsp",
+        "aisle": "Spices",
+        "isStaple": true
+      },
+      {
+        "name": "Olive oil",
+        "amount": 1,
+        "unit": "tbsp",
+        "aisle": "Oils & Vinegars",
+        "isStaple": true
+      }
+    ],
+    "cuisine": "American"
+  },
+  {
+    "id": "r007",
+    "name": "Classic Smash Burgers",
+    "labels": [
+      "cheat"
+    ],
+    "prepTimeISO": "PT20M",
+    "caloriesPerPerson": 780,
+    "recipeYield": 2,
+    "instructions": [
+      "Divide ground beef into 4 loose balls (don't pack tightly).",
+      "Heat a cast-iron skillet or griddle over very high heat until smoking.",
+      "Place beef balls on the skillet and immediately smash flat with a spatula.",
+      "Season generously with salt and pepper. Cook 2\u20133 minutes until edges are lacy.",
+      "Flip once, add a slice of American cheese, and cook 1 minute more.",
+      "Stack two patties per burger on a toasted brioche bun.",
+      "Load up with special sauce, pickles, white onion, and lettuce."
+    ],
+    "ingredients": [
+      {
+        "name": "80/20 ground beef",
+        "amount": 400,
+        "unit": "g",
+        "aisle": "Meat & Poultry",
+        "isStaple": false
+      },
+      {
+        "name": "Brioche burger buns",
+        "amount": 2,
+        "unit": "pieces",
+        "aisle": "Bread & Bakery",
+        "isStaple": false
+      },
+      {
+        "name": "American cheese slices",
+        "amount": 4,
+        "unit": "slices",
+        "aisle": "Dairy & Eggs",
+        "isStaple": false
+      },
+      {
+        "name": "Dill pickles",
+        "amount": 8,
+        "unit": "slices",
+        "aisle": "Condiments",
+        "isStaple": false
+      },
+      {
+        "name": "White onion",
+        "amount": 0.5,
+        "unit": "piece",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Shredded iceberg lettuce",
+        "amount": 1,
+        "unit": "cup",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Mayonnaise",
+        "amount": 2,
+        "unit": "tbsp",
+        "aisle": "Condiments",
+        "isStaple": false
+      },
+      {
+        "name": "Ketchup",
+        "amount": 1,
+        "unit": "tbsp",
+        "aisle": "Condiments",
+        "isStaple": false
+      },
+      {
+        "name": "Yellow mustard",
+        "amount": 1,
+        "unit": "tbsp",
+        "aisle": "Condiments",
+        "isStaple": false
+      },
+      {
+        "name": "Butter",
+        "amount": 1,
+        "unit": "tbsp",
+        "aisle": "Dairy & Eggs",
+        "isStaple": true
+      },
+      {
+        "name": "Salt",
+        "amount": 1,
+        "unit": "tsp",
+        "aisle": "Spices",
+        "isStaple": true
+      },
+      {
+        "name": "Black pepper",
+        "amount": 0.5,
+        "unit": "tsp",
+        "aisle": "Spices",
+        "isStaple": true
+      }
+    ],
+    "cuisine": "American"
+  },
+  {
+    "id": "r008",
+    "name": "Loaded Mac & Cheese with Bacon",
+    "labels": [
+      "cheat"
+    ],
+    "prepTimeISO": "PT35M",
+    "caloriesPerPerson": 860,
+    "recipeYield": 4,
+    "instructions": [
+      "Cook elbow pasta in salted boiling water until al dente; reserve 1 cup pasta water.",
+      "Fry bacon strips until crispy; crumble and set aside, reserving 1 tbsp fat.",
+      "Make roux: melt butter in a large saucepan, whisk in flour, cook 1 minute.",
+      "Whisk in milk gradually until smooth. Simmer until thickened, about 5 minutes.",
+      "Remove from heat and stir in cheddar and Gruy\u00e8re until melted and smooth.",
+      "Fold in pasta, adding pasta water to loosen if needed.",
+      "Top with bacon, breadcrumbs, and a sprinkle of paprika. Broil 2 minutes."
+    ],
+    "ingredients": [
+      {
+        "name": "Elbow macaroni",
+        "amount": 400,
+        "unit": "g",
+        "aisle": "Grains & Pasta",
+        "isStaple": false
+      },
+      {
+        "name": "Sharp cheddar (shredded)",
+        "amount": 200,
+        "unit": "g",
+        "aisle": "Dairy & Eggs",
+        "isStaple": false
+      },
+      {
+        "name": "Gruy\u00e8re (shredded)",
+        "amount": 100,
+        "unit": "g",
+        "aisle": "Dairy & Eggs",
+        "isStaple": false
+      },
+      {
+        "name": "Thick-cut bacon",
+        "amount": 6,
+        "unit": "strips",
+        "aisle": "Meat & Poultry",
+        "isStaple": false
+      },
+      {
+        "name": "Whole milk",
+        "amount": 3,
+        "unit": "cups",
+        "aisle": "Dairy & Eggs",
+        "isStaple": false
+      },
+      {
+        "name": "Panko breadcrumbs",
+        "amount": 0.5,
+        "unit": "cup",
+        "aisle": "Bread & Bakery",
+        "isStaple": false
+      },
+      {
+        "name": "All-purpose flour",
+        "amount": 3,
+        "unit": "tbsp",
+        "aisle": "Baking",
+        "isStaple": true
+      },
+      {
+        "name": "Butter",
+        "amount": 3,
+        "unit": "tbsp",
+        "aisle": "Dairy & Eggs",
+        "isStaple": true
+      },
+      {
+        "name": "Salt",
+        "amount": 1,
+        "unit": "tsp",
+        "aisle": "Spices",
+        "isStaple": true
+      },
+      {
+        "name": "Smoked paprika",
+        "amount": 0.5,
+        "unit": "tsp",
+        "aisle": "Spices",
+        "isStaple": true
+      }
+    ],
+    "cuisine": "American"
+  },
+  {
+    "id": "r009",
+    "name": "Pepperoni Deep Dish Pizza",
+    "labels": [
+      "cheat"
+    ],
+    "prepTimeISO": "PT60M",
+    "caloriesPerPerson": 920,
+    "recipeYield": 4,
+    "instructions": [
+      "Preheat oven to 450\u00b0F. Grease a 9-inch cast-iron skillet generously with butter.",
+      "Press store-bought pizza dough into and up the sides of the skillet.",
+      "Layer mozzarella slices directly on the dough (cheese goes first!).",
+      "Add a generous layer of pepperoni on top of the cheese.",
+      "Spoon crushed San Marzano tomatoes over pepperoni, season with oregano.",
+      "Top with grated Parmesan and another layer of pepperoni.",
+      "Bake 25\u201330 minutes until crust is golden brown. Rest 5 minutes before slicing."
+    ],
+    "ingredients": [
+      {
+        "name": "Pizza dough (store-bought)",
+        "amount": 500,
+        "unit": "g",
+        "aisle": "Bread & Bakery",
+        "isStaple": false
+      },
+      {
+        "name": "Fresh mozzarella",
+        "amount": 300,
+        "unit": "g",
+        "aisle": "Dairy & Eggs",
+        "isStaple": false
+      },
+      {
+        "name": "Pepperoni",
+        "amount": 150,
+        "unit": "g",
+        "aisle": "Meat & Poultry",
+        "isStaple": false
+      },
+      {
+        "name": "Canned San Marzano tomatoes",
+        "amount": 1,
+        "unit": "can",
+        "aisle": "Canned Goods",
+        "isStaple": false
+      },
+      {
+        "name": "Parmesan (grated)",
+        "amount": 50,
+        "unit": "g",
+        "aisle": "Dairy & Eggs",
+        "isStaple": false
+      },
+      {
+        "name": "Butter",
+        "amount": 3,
+        "unit": "tbsp",
+        "aisle": "Dairy & Eggs",
+        "isStaple": true
+      },
+      {
+        "name": "Dried oregano",
+        "amount": 1,
+        "unit": "tsp",
+        "aisle": "Spices",
+        "isStaple": true
+      },
+      {
+        "name": "Garlic powder",
+        "amount": 0.5,
+        "unit": "tsp",
+        "aisle": "Spices",
+        "isStaple": true
+      }
+    ],
+    "cuisine": "Italian"
+  },
+  {
+    "id": "r010",
+    "name": "Egg White & Spinach Frittata",
+    "labels": [
+      "healthy",
+      "low-carb"
+    ],
+    "prepTimeISO": "PT25M",
+    "caloriesPerPerson": 220,
+    "recipeYield": 2,
+    "instructions": [
+      "Preheat oven to 375\u00b0F. Whisk egg whites with a pinch of salt until slightly frothy.",
+      "Heat olive oil in an oven-safe skillet over medium heat.",
+      "Saut\u00e9 diced onion and garlic until translucent, about 3 minutes.",
+      "Add spinach and cook until wilted, about 2 minutes. Season with nutmeg.",
+      "Add diced roasted red peppers and distribute evenly.",
+      "Pour egg whites over the vegetables. Cook undisturbed 2 minutes until edges set.",
+      "Transfer to oven and bake 10\u201312 minutes until fully set. Slice and serve."
+    ],
+    "ingredients": [
+      {
+        "name": "Egg whites",
+        "amount": 8,
+        "unit": "pieces",
+        "aisle": "Dairy & Eggs",
+        "isStaple": false
+      },
+      {
+        "name": "Baby spinach",
+        "amount": 3,
+        "unit": "cups",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Roasted red peppers (jarred)",
+        "amount": 0.5,
+        "unit": "cup",
+        "aisle": "Condiments",
+        "isStaple": false
+      },
+      {
+        "name": "Yellow onion",
+        "amount": 0.5,
+        "unit": "piece",
+        "aisle": "Produce",
+        "isStaple": false
+      },
+      {
+        "name": "Garlic cloves",
+        "amount": 2,
+        "unit": "cloves",
+        "aisle": "Produce",
+        "isStaple": true
+      },
+      {
+        "name": "Olive oil",
+        "amount": 1,
+        "unit": "tbsp",
+        "aisle": "Oils & Vinegars",
+        "isStaple": true
+      },
+      {
+        "name": "Ground nutmeg",
+        "amount": 0.125,
+        "unit": "tsp",
+        "aisle": "Spices",
+        "isStaple": true
+      },
+      {
+        "name": "Salt",
+        "amount": 0.5,
+        "unit": "tsp",
+        "aisle": "Spices",
+        "isStaple": true
+      }
+    ],
+    "cuisine": "Mediterranean"
+  }
+]

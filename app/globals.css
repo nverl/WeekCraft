@@ -12,15 +12,24 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Calendar slide-in animations */
+@keyframes slideInFromRight {
+  from { transform: translateX(1.5rem); opacity: 0; }
+  to   { transform: translateX(0);      opacity: 1; }
+}
+@keyframes slideInFromLeft {
+  from { transform: translateX(-1.5rem); opacity: 0; }
+  to   { transform: translateX(0);       opacity: 1; }
+}
+.slide-from-right { animation: slideInFromRight 0.22s ease-out both; }
+.slide-from-left  { animation: slideInFromLeft  0.22s ease-out both; }

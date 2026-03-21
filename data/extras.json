@@ -1,0 +1,115 @@
+[
+  {
+    "id": "smoothie",
+    "name": "Smoothie",
+    "emoji": "🥤",
+    "category": "drink",
+    "ingredients": [
+      { "name": "Banana", "amount": 5, "unit": "piece", "aisle": "Produce", "isStaple": false },
+      { "name": "Frozen mixed berries", "amount": 300, "unit": "g", "aisle": "Frozen Foods", "isStaple": false },
+      { "name": "Milk", "amount": 500, "unit": "ml", "aisle": "Dairy & Eggs", "isStaple": false }
+    ]
+  },
+  {
+    "id": "ginger-juice",
+    "name": "Ginger juice",
+    "emoji": "🍋",
+    "category": "drink",
+    "ingredients": [
+      { "name": "Fresh ginger", "amount": 100, "unit": "g", "aisle": "Produce", "isStaple": false },
+      { "name": "Lemon", "amount": 3, "unit": "piece", "aisle": "Produce", "isStaple": false },
+      { "name": "Honey", "amount": 3, "unit": "tbsp", "aisle": "Condiments", "isStaple": false }
+    ]
+  },
+  {
+    "id": "granola-yoghurt",
+    "name": "Granola yoghurt",
+    "emoji": "🥣",
+    "category": "breakfast",
+    "ingredients": [
+      { "name": "Greek yoghurt", "amount": 500, "unit": "g", "aisle": "Dairy & Eggs", "isStaple": false },
+      { "name": "Granola", "amount": 200, "unit": "g", "aisle": "Grains & Pasta", "isStaple": false },
+      { "name": "Mixed berries", "amount": 200, "unit": "g", "aisle": "Produce", "isStaple": false }
+    ]
+  },
+  {
+    "id": "green-juice",
+    "name": "Green juice",
+    "emoji": "🥗",
+    "category": "drink",
+    "ingredients": [
+      { "name": "Baby spinach", "amount": 100, "unit": "g", "aisle": "Produce", "isStaple": false },
+      { "name": "Apple", "amount": 2, "unit": "piece", "aisle": "Produce", "isStaple": false },
+      { "name": "Cucumber", "amount": 1, "unit": "piece", "aisle": "Produce", "isStaple": false },
+      { "name": "Lemon", "amount": 1, "unit": "piece", "aisle": "Produce", "isStaple": false }
+    ]
+  },
+  {
+    "id": "overnight-oats",
+    "name": "Overnight oats",
+    "emoji": "🌾",
+    "category": "breakfast",
+    "ingredients": [
+      { "name": "Rolled oats", "amount": 400, "unit": "g", "aisle": "Grains & Pasta", "isStaple": false },
+      { "name": "Milk", "amount": 500, "unit": "ml", "aisle": "Dairy & Eggs", "isStaple": false },
+      { "name": "Chia seeds", "amount": 3, "unit": "tbsp", "aisle": "Baking", "isStaple": false },
+      { "name": "Honey", "amount": 2, "unit": "tbsp", "aisle": "Condiments", "isStaple": false }
+    ]
+  },
+  {
+    "id": "avocado-toast",
+    "name": "Avocado toast",
+    "emoji": "🥑",
+    "category": "breakfast",
+    "ingredients": [
+      { "name": "Avocado", "amount": 3, "unit": "piece", "aisle": "Produce", "isStaple": false },
+      { "name": "Sourdough bread", "amount": 1, "unit": "loaf", "aisle": "Bread & Bakery", "isStaple": false },
+      { "name": "Lemon", "amount": 1, "unit": "piece", "aisle": "Produce", "isStaple": false }
+    ]
+  },
+  {
+    "id": "protein-shake",
+    "name": "Protein shake",
+    "emoji": "💪",
+    "category": "snack",
+    "ingredients": [
+      { "name": "Protein powder", "amount": 210, "unit": "g", "aisle": "Other", "isStaple": false },
+      { "name": "Banana", "amount": 3, "unit": "piece", "aisle": "Produce", "isStaple": false },
+      { "name": "Milk", "amount": 750, "unit": "ml", "aisle": "Dairy & Eggs", "isStaple": false }
+    ]
+  },
+  {
+    "id": "hummus-veggies",
+    "name": "Hummus & veggies",
+    "emoji": "🥕",
+    "category": "snack",
+    "ingredients": [
+      { "name": "Hummus", "amount": 200, "unit": "g", "aisle": "Condiments", "isStaple": false },
+      { "name": "Carrot", "amount": 4, "unit": "piece", "aisle": "Produce", "isStaple": false },
+      { "name": "Cucumber", "amount": 1, "unit": "piece", "aisle": "Produce", "isStaple": false },
+      { "name": "Bell pepper", "amount": 2, "unit": "piece", "aisle": "Produce", "isStaple": false }
+    ]
+  },
+  {
+    "id": "fruit-bowl",
+    "name": "Fruit bowl",
+    "emoji": "🍓",
+    "category": "snack",
+    "ingredients": [
+      { "name": "Strawberries", "amount": 250, "unit": "g", "aisle": "Produce", "isStaple": false },
+      { "name": "Blueberries", "amount": 150, "unit": "g", "aisle": "Produce", "isStaple": false },
+      { "name": "Banana", "amount": 2, "unit": "piece", "aisle": "Produce", "isStaple": false },
+      { "name": "Kiwi", "amount": 2, "unit": "piece", "aisle": "Produce", "isStaple": false }
+    ]
+  },
+  {
+    "id": "coffee",
+    "name": "Coffee",
+    "emoji": "☕",
+    "category": "drink",
+    "ingredients": [
+      { "name": "Coffee beans", "amount": 250, "unit": "g", "aisle": "Other", "isStaple": false },
+      { "name": "Milk", "amount": 500, "unit": "ml", "aisle": "Dairy & Eggs", "isStaple": false }
+    ]
+  }
+]
