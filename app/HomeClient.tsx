@@ -11,6 +11,8 @@ import WeekDetailView from '@/app/components/calendar/WeekDetailView';
 import ShoppingList from '@/app/components/shopping/ShoppingList';
 import RecipesView from '@/app/components/recipes/RecipesView';
 import { useState } from 'react';
+import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import type { DayPlan, Recipe } from '@/app/types';
 
 type AppView = 'calendar' | 'shopping' | 'recipes';
@@ -26,6 +28,7 @@ const NAV: { id: AppView; label: string; icon: React.ReactNode }[] = [
 ];
 
 export default function HomeClient({ seedRecipes }: HomeClientProps) {
+  const { data: session } = useSession();
   const { dayConfigs, people, selectedExtras, resetWizard } = useWizardStore();
   const {
     weeks, wizardOpen, activeWeekStart,
@@ -90,14 +93,23 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
       <header className="bg-white border-b border-zinc-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
           <Sparkles size={18} className="text-orange-500" />
-          <span className="font-black text-zinc-900">KitchenFlow</span>
+          <span className="font-black text-zinc-900">WeekCraft</span>
         </div>
-        <button
-          onClick={handleNewPlan}
-          className="text-xs text-zinc-400 hover:text-zinc-600 underline cursor-pointer"
-        >
-          New plan
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleNewPlan}
+            className="text-xs text-zinc-400 hover:text-zinc-600 underline cursor-pointer"
+          >
+            New plan
+          </button>
+          <Link
+            href="/settings"
+            className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center text-white text-xs font-black hover:bg-zinc-700 transition flex-shrink-0"
+            aria-label="Account settings"
+          >
+            {(session?.user?.name ?? '?').slice(0, 2).toUpperCase()}
+          </Link>
+        </div>
       </header>
 
       {/* View */}

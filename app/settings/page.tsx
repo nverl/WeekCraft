@@ -1,0 +1,334 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import {
+  ChevronLeft, User, Lock, Trash2,
+  Check, AlertCircle, Eye, EyeOff, LogOut,
+} from 'lucide-react';
+
+// ── Reusable feedback pill ────────────────────────────────────────────────────
+function Feedback({ type, message }: { type: 'success' | 'error'; message: string }) {
+  return (
+    <div className={`flex items-center gap-2 text-sm rounded-xl px-3.5 py-2.5 mt-3
+      ${type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+      {type === 'success' ? <Check size={14} /> : <AlertCircle size={14} />}
+      {message}
+    </div>
+  );
+}
+
+// ── Section card shell ────────────────────────────────────────────────────────
+function Section({ icon, title, children }: {
+  icon: React.ReactNode;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="bg-white rounded-3xl border border-zinc-100 p-6">
+      <div className="flex items-center gap-2.5 mb-5">
+        <div className="w-8 h-8 rounded-xl bg-zinc-100 flex items-center justify-center text-zinc-600">
+          {icon}
+        </div>
+        <h2 className="text-sm font-bold text-zinc-900">{title}</h2>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ── Label + input helper ──────────────────────────────────────────────────────
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1.5">
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+const inputCls = 'w-full px-4 py-3 rounded-2xl border border-zinc-200 text-sm text-zinc-900 bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:bg-white transition';
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+export default function SettingsPage() {
+  const { data: session, update: updateSession } = useSession();
+  const router = useRouter();
+
+  // Profile data
+  const [memberSince, setMemberSince] = useState<string | null>(null);
+  const [currentUsername, setCurrentUsername] = useState('');
+
+  // Username change
+  const [newUsername, setNewUsername] = useState('');
+  const [usernameFeedback, setUsernameFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [usernameLoading, setUsernameLoading] = useState(false);
+
+  // Password change
+  const [currentPw, setCurrentPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [showPw, setShowPw] = useState(false);
+  const [pwFeedback, setPwFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [pwLoading, setPwLoading] = useState(false);
+
+  // Delete account
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteFeedback, setDeleteFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const deleteInputRef = useRef<HTMLInputElement>(null);
+
+  // Load account info
+  useEffect(() => {
+    fetch('/api/account/me')
+      .then((r) => r.json())
+      .then((d) => {
+        setCurrentUsername(d.username ?? '');
+        setNewUsername(d.username ?? '');
+        if (d.createdAt) {
+          setMemberSince(new Date(d.createdAt).toLocaleDateString('en-GB', {
+            day: 'numeric', month: 'long', year: 'numeric',
+          }));
+        }
+      });
+  }, []);
+
+  useEffect(() => {
+    if (deleteOpen) setTimeout(() => deleteInputRef.current?.focus(), 50);
+  }, [deleteOpen]);
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  async function handleUsernameChange(e: React.FormEvent) {
+    e.preventDefault();
+    setUsernameFeedback(null);
+    if (newUsername === currentUsername) {
+      setUsernameFeedback({ type: 'error', msg: 'That\'s already your username' });
+      return;
+    }
+    setUsernameLoading(true);
+    const res = await fetch('/api/account', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'username', username: newUsername }),
+    });
+    const data = await res.json();
+    setUsernameLoading(false);
+    if (!res.ok) {
+      setUsernameFeedback({ type: 'error', msg: data.error });
+    } else {
+      setCurrentUsername(data.username);
+      setUsernameFeedback({ type: 'success', msg: 'Username updated' });
+      await updateSession({ name: data.username });
+    }
+  }
+
+  async function handlePasswordChange(e: React.FormEvent) {
+    e.preventDefault();
+    setPwFeedback(null);
+    if (newPw !== confirmPw) {
+      setPwFeedback({ type: 'error', msg: 'Passwords do not match' });
+      return;
+    }
+    setPwLoading(true);
+    const res = await fetch('/api/account', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'password', currentPassword: currentPw, newPassword: newPw }),
+    });
+    const data = await res.json();
+    setPwLoading(false);
+    if (!res.ok) {
+      setPwFeedback({ type: 'error', msg: data.error });
+    } else {
+      setCurrentPw(''); setNewPw(''); setConfirmPw('');
+      setPwFeedback({ type: 'success', msg: 'Password changed successfully' });
+    }
+  }
+
+  async function handleDeleteAccount() {
+    setDeleteLoading(true);
+    const res = await fetch('/api/account', { method: 'DELETE' });
+    if (res.ok) {
+      await signOut({ callbackUrl: '/login' });
+    } else {
+      setDeleteLoading(false);
+      setDeleteFeedback({ type: 'error', msg: 'Could not delete account. Try again.' });
+    }
+  }
+
+  const initials = (currentUsername || session?.user?.name || '?').slice(0, 2).toUpperCase();
+
+  return (
+    <div className="min-h-screen bg-zinc-50">
+      {/* Header */}
+      <header className="bg-white border-b border-zinc-100 px-4 py-4 flex items-center gap-3 sticky top-0 z-10">
+        <button
+          onClick={() => router.back()}
+          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-zinc-100 text-zinc-600 transition cursor-pointer"
+          aria-label="Back"
+        >
+          <ChevronLeft size={20} />
+        </button>
+        <h1 className="text-base font-black text-zinc-900">Account Settings</h1>
+      </header>
+
+      <div className="max-w-lg mx-auto px-4 py-6 flex flex-col gap-4">
+
+        {/* Avatar + info */}
+        <div className="flex items-center gap-4 px-2 pb-2">
+          <div className="w-14 h-14 rounded-full bg-zinc-900 flex items-center justify-center text-white text-lg font-black flex-shrink-0">
+            {initials}
+          </div>
+          <div>
+            <p className="font-bold text-zinc-900 text-base">{currentUsername}</p>
+            {memberSince && (
+              <p className="text-xs text-zinc-400 mt-0.5">Member since {memberSince}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Change username */}
+        <Section icon={<User size={15} />} title="Username">
+          <form onSubmit={handleUsernameChange} className="flex flex-col gap-4">
+            <Field label="New username">
+              <input
+                type="text"
+                value={newUsername}
+                onChange={(e) => setNewUsername(e.target.value)}
+                minLength={3}
+                required
+                className={inputCls}
+              />
+            </Field>
+            {usernameFeedback && <Feedback type={usernameFeedback.type} message={usernameFeedback.msg} />}
+            <button
+              type="submit"
+              disabled={usernameLoading || !newUsername.trim()}
+              className="self-end px-5 py-2.5 rounded-2xl bg-zinc-900 text-white text-sm font-bold hover:bg-zinc-700 transition disabled:opacity-40 cursor-pointer"
+            >
+              {usernameLoading ? 'Saving…' : 'Save username'}
+            </button>
+          </form>
+        </Section>
+
+        {/* Change password */}
+        <Section icon={<Lock size={15} />} title="Password">
+          <form onSubmit={handlePasswordChange} className="flex flex-col gap-4">
+            <Field label="Current password">
+              <div className="relative">
+                <input
+                  type={showPw ? 'text' : 'password'}
+                  value={currentPw}
+                  onChange={(e) => setCurrentPw(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  className={`${inputCls} pr-11`}
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 cursor-pointer"
+                >
+                  {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+            </Field>
+            <Field label="New password">
+              <input
+                type={showPw ? 'text' : 'password'}
+                value={newPw}
+                onChange={(e) => setNewPw(e.target.value)}
+                required
+                minLength={6}
+                autoComplete="new-password"
+                className={inputCls}
+                placeholder="At least 6 characters"
+              />
+            </Field>
+            <Field label="Confirm new password">
+              <input
+                type={showPw ? 'text' : 'password'}
+                value={confirmPw}
+                onChange={(e) => setConfirmPw(e.target.value)}
+                required
+                autoComplete="new-password"
+                className={inputCls}
+                placeholder="Repeat new password"
+              />
+            </Field>
+            {pwFeedback && <Feedback type={pwFeedback.type} message={pwFeedback.msg} />}
+            <button
+              type="submit"
+              disabled={pwLoading || !currentPw || !newPw || !confirmPw}
+              className="self-end px-5 py-2.5 rounded-2xl bg-zinc-900 text-white text-sm font-bold hover:bg-zinc-700 transition disabled:opacity-40 cursor-pointer"
+            >
+              {pwLoading ? 'Saving…' : 'Change password'}
+            </button>
+          </form>
+        </Section>
+
+        {/* Sign out */}
+        <button
+          onClick={() => signOut({ callbackUrl: '/login' })}
+          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border border-zinc-200 bg-white text-sm font-semibold text-zinc-700 hover:bg-zinc-50 transition cursor-pointer"
+        >
+          <LogOut size={15} />
+          Sign out
+        </button>
+
+        {/* Danger zone */}
+        <Section icon={<Trash2 size={15} />} title="Danger zone">
+          {!deleteOpen ? (
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-zinc-800">Delete account</p>
+                <p className="text-xs text-zinc-400 mt-0.5">Permanently removes all your data</p>
+              </div>
+              <button
+                onClick={() => setDeleteOpen(true)}
+                className="px-4 py-2 rounded-xl bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 transition cursor-pointer"
+              >
+                Delete
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <p className="text-sm text-zinc-700">
+                Type <span className="font-bold text-zinc-900">{currentUsername}</span> to confirm:
+              </p>
+              <input
+                ref={deleteInputRef}
+                type="text"
+                value={deleteConfirm}
+                onChange={(e) => setDeleteConfirm(e.target.value)}
+                className={inputCls}
+                placeholder={currentUsername}
+              />
+              {deleteFeedback && <Feedback type={deleteFeedback.type} message={deleteFeedback.msg} />}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setDeleteOpen(false); setDeleteConfirm(''); }}
+                  className="flex-1 py-2.5 rounded-2xl border border-zinc-200 text-sm font-semibold text-zinc-600 hover:bg-zinc-50 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deleteConfirm !== currentUsername || deleteLoading}
+                  className="flex-1 py-2.5 rounded-2xl bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition disabled:opacity-40 cursor-pointer"
+                >
+                  {deleteLoading ? 'Deleting…' : 'Delete my account'}
+                </button>
+              </div>
+            </div>
+          )}
+        </Section>
+
+      </div>
+    </div>
+  );
+}
