@@ -1,11 +1,12 @@
 'use client';
 
-import { CalendarDays, ShoppingCart, Sparkles, BookOpen } from 'lucide-react';
+import { CalendarDays, ShoppingCart, Sparkles, BookOpen, Home } from 'lucide-react';
 import { useWizardStore } from '@/app/store/wizardStore';
 import { useWeekPlanStore } from '@/app/store/weekPlanStore';
 import { useRecipeStore } from '@/app/store/recipeStore';
 import { getWeekStartISO, getNextMonday } from '@/app/lib/weekUtils';
 import WizardContainer from '@/app/components/wizard/WizardContainer';
+import HomeView from '@/app/components/home/HomeView';
 import MonthCalendar from '@/app/components/calendar/MonthCalendar';
 import WeekDetailView from '@/app/components/calendar/WeekDetailView';
 import ShoppingList from '@/app/components/shopping/ShoppingList';
@@ -15,13 +16,17 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import type { DayPlan, Recipe } from '@/app/types';
 
-type AppView = 'calendar' | 'shopping' | 'recipes';
+type AppView = 'home' | 'calendar' | 'shopping' | 'recipes';
+
+// calendar sub-view: 'month' → MonthCalendar, 'week' → WeekDetailView
+type CalendarSubView = 'month' | 'week';
 
 interface HomeClientProps {
   seedRecipes: Recipe[];
 }
 
 const NAV: { id: AppView; label: string; icon: React.ReactNode }[] = [
+  { id: 'home',     label: 'Home',     icon: <Home size={20} />        },
   { id: 'calendar', label: 'Calendar', icon: <CalendarDays size={20} /> },
   { id: 'shopping', label: 'Shopping', icon: <ShoppingCart size={20} /> },
   { id: 'recipes',  label: 'Recipes',  icon: <BookOpen size={20} />     },
@@ -34,9 +39,11 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
     weeks, wizardOpen, activeWeekStart,
     saveWeek, closeWizard, openWizardForWeek,
     toggleWeekForShopping, selectedWeeksForShopping,
+    setActiveWeek,
   } = useWeekPlanStore();
   const { customRecipes } = useRecipeStore();
-  const [view, setView] = useState<AppView>('calendar');
+  const [view, setView] = useState<AppView>('home');
+  const [calSub, setCalSub] = useState<CalendarSubView>('month');
 
   // Merge seed + custom recipes
   const allRecipes: Recipe[] = [...seedRecipes, ...customRecipes];
@@ -56,23 +63,32 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
       selectedExtras: [...selectedExtras],
     });
 
-    // Auto-select this week for shopping if not already selected
     if (!selectedWeeksForShopping.includes(effectiveWeekStart)) {
       toggleWeekForShopping(effectiveWeekStart);
     }
 
     closeWizard();
+    setView('home');
   };
 
-  // ── Cancel handler — only when user already has existing plans ────────────
-  const handleWizardCancel = () => {
-    closeWizard();
-  };
+  const handleWizardCancel = () => closeWizard();
 
-  // ── New plan handler (header button) ─────────────────────────────────────
   const handleNewPlan = () => {
-    resetWizard();           // reset first (sets targetWeekStart to null anyway)
-    openWizardForWeek(null); // null = plan next Monday
+    resetWizard();
+    openWizardForWeek(null);
+  };
+
+  // Navigate to a specific week's detail view
+  const handleOpenWeek = (weekStart: string) => {
+    setActiveWeek(weekStart);
+    setCalSub('week');
+    setView('calendar');
+  };
+
+  // Show month calendar (from HomeView "All weeks" link)
+  const handleShowAllWeeks = () => {
+    setCalSub('month');
+    setView('calendar');
   };
 
   // ── Wizard full-page ──────────────────────────────────────────────────────
@@ -85,6 +101,22 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
       />
     );
   }
+
+  // ── Calendar sub-view resolution ─────────────────────────────────────────
+  const calendarContent = () => {
+    if (calSub === 'week' && activeWeekStart && weeks[activeWeekStart]) {
+      return (
+        <div key={activeWeekStart} className="h-full slide-from-right">
+          <WeekDetailView weekPlan={weeks[activeWeekStart]} recipes={allRecipes} />
+        </div>
+      );
+    }
+    return (
+      <div key="month" className="h-full slide-from-left">
+        <MonthCalendar recipes={allRecipes} />
+      </div>
+    );
+  };
 
   // ── Main App ──────────────────────────────────────────────────────────────
   return (
@@ -114,18 +146,8 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
 
       {/* View */}
       <div className="flex-1 overflow-hidden">
-        {view === 'calendar' && (
-          activeWeekStart && weeks[activeWeekStart]
-            ? (
-              <div key={activeWeekStart} className="h-full slide-from-right">
-                <WeekDetailView weekPlan={weeks[activeWeekStart]} recipes={allRecipes} />
-              </div>
-            ) : (
-              <div key="month" className="h-full slide-from-left">
-                <MonthCalendar recipes={allRecipes} />
-              </div>
-            )
-        )}
+        {view === 'home'     && <HomeView recipes={allRecipes} onShowAllWeeks={handleShowAllWeeks} />}
+        {view === 'calendar' && calendarContent()}
         {view === 'shopping' && <ShoppingList />}
         {view === 'recipes'  && <RecipesView seedRecipes={seedRecipes} />}
       </div>
@@ -139,7 +161,7 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
               <button
                 key={item.id}
                 onClick={() => setView(item.id)}
-                className={`flex flex-col items-center gap-1 px-5 py-2 rounded-2xl transition-all cursor-pointer
+                className={`flex flex-col items-center gap-1 px-4 py-2 rounded-2xl transition-all cursor-pointer
                   ${isActive ? 'text-zinc-900' : 'text-zinc-400 hover:text-zinc-600'}`}
               >
                 {item.icon}
