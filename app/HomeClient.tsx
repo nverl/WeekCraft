@@ -18,9 +18,6 @@ import type { DayPlan, Recipe } from '@/app/types';
 
 type AppView = 'home' | 'calendar' | 'shopping' | 'recipes';
 
-// calendar sub-view: 'month' → MonthCalendar, 'week' → WeekDetailView
-type CalendarSubView = 'month' | 'week';
-
 interface HomeClientProps {
   seedRecipes: Recipe[];
 }
@@ -43,7 +40,6 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
   } = useWeekPlanStore();
   const { customRecipes } = useRecipeStore();
   const [view, setView] = useState<AppView>('home');
-  const [calSub, setCalSub] = useState<CalendarSubView>('month');
 
   // Merge seed + custom recipes
   const allRecipes: Recipe[] = [...seedRecipes, ...customRecipes];
@@ -78,16 +74,9 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
     openWizardForWeek(null);
   };
 
-  // Navigate to a specific week's detail view
-  const handleOpenWeek = (weekStart: string) => {
-    setActiveWeek(weekStart);
-    setCalSub('week');
-    setView('calendar');
-  };
-
   // Show month calendar (from HomeView "All weeks" link)
   const handleShowAllWeeks = () => {
-    setCalSub('month');
+    setActiveWeek(null);
     setView('calendar');
   };
 
@@ -104,7 +93,7 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
 
   // ── Calendar sub-view resolution ─────────────────────────────────────────
   const calendarContent = () => {
-    if (calSub === 'week' && activeWeekStart && weeks[activeWeekStart]) {
+    if (activeWeekStart && weeks[activeWeekStart]) {
       return (
         <div key={activeWeekStart} className="h-full slide-from-right">
           <WeekDetailView weekPlan={weeks[activeWeekStart]} recipes={allRecipes} />
@@ -146,7 +135,7 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
 
       {/* View */}
       <div className="flex-1 overflow-hidden">
-        {view === 'home'     && <HomeView recipes={allRecipes} onShowAllWeeks={handleShowAllWeeks} />}
+        {view === 'home' && <HomeView recipes={allRecipes} onShowAllWeeks={handleShowAllWeeks} />}
         {view === 'calendar' && calendarContent()}
         {view === 'shopping' && <ShoppingList />}
         {view === 'recipes'  && <RecipesView seedRecipes={seedRecipes} />}
