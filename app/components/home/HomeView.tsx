@@ -125,10 +125,16 @@ export default function HomeView({ recipes, onShowAllWeeks }: HomeViewProps) {
     [weekPlan, todayStr]
   );
 
-  // Active day — default to today if it exists, else first day
-  const [activeDayIndex, setActiveDayIndex] = useState<number>(() =>
-    todayDayIndex >= 0 ? todayDayIndex : 0
-  );
+  // Active day — starts at 0, snaps to today once the week plan loads from DB.
+  const [activeDayIndex, setActiveDayIndex] = useState<number>(0);
+  const [snappedToToday, setSnappedToToday] = useState(false);
+
+  // Once todayDayIndex becomes valid (data loaded), jump to today — but only
+  // once so the user can freely navigate afterwards.
+  if (!snappedToToday && todayDayIndex >= 0) {
+    setSnappedToToday(true);
+    setActiveDayIndex(todayDayIndex);
+  }
 
   const [showRecipeModal, setShowRecipeModal] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
