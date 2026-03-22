@@ -1,6 +1,6 @@
 'use client';
 
-import { Minus, Plus, ShoppingBag, Users } from 'lucide-react';
+import { Minus, Plus, ShoppingBag } from 'lucide-react';
 import { useWizardStore } from '@/app/store/wizardStore';
 import { useExtrasStore } from '@/app/store/extrasStore';
 
@@ -42,7 +42,7 @@ function QtyStepper({ qty, onChange, min = 0, max = 20 }: QtyStepperProps) {
 // ── Main step ─────────────────────────────────────────────────────────────────
 
 export default function Step2WeeklyExtras() {
-  const { selectedExtras, setWizardExtraQty, people, setPeople } = useWizardStore();
+  const { selectedExtras, setWizardExtraQty } = useWizardStore();
   const { extras } = useExtrasStore();
 
   const totalSelected = selectedExtras.length;
@@ -54,17 +54,8 @@ export default function Step2WeeklyExtras() {
     <div>
       <h2 className="text-2xl font-bold text-zinc-900 mb-1">Weekly extras</h2>
       <p className="text-zinc-500 mb-6 text-sm">
-        Set how many people you&apos;re cooking for, then pick extras for the week.
+        Add smoothies, snacks, or breakfast items for the week.
       </p>
-
-      {/* People counter */}
-      <div className="flex items-center justify-between bg-zinc-50 border border-zinc-200 rounded-2xl px-5 py-4 mb-6">
-        <div className="flex items-center gap-2 text-zinc-700">
-          <Users size={16} />
-          <span className="text-sm font-semibold">People per meal</span>
-        </div>
-        <QtyStepper qty={people} onChange={setPeople} min={1} max={12} />
-      </div>
 
       <div className="flex flex-col gap-3">
         {extras.map((extra) => {
