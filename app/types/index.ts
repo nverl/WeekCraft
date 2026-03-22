@@ -53,6 +53,7 @@ export interface DayConfig {
   maxCalories: number | null;   // null = Any
   freeNote: string;             // Used when label === 'none'
   freeCalories: number | null;  // Used when label === 'none'
+  people?: number;              // Per-day override; falls back to week-level default
 }
 
 export interface DayPlan {
