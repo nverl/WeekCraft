@@ -122,7 +122,20 @@ export default function ShoppingList() {
 
   const [copied, setCopied] = useState(false);
 
-  const plannedWeekStarts = Object.keys(weeks).sort();
+  // Only show current week + up to 4 future weeks (5 total); discard past weeks
+  const todayMonday = (() => {
+    const d = new Date();
+    const day = d.getDay(); // 0=Sun, 1=Mon, …
+    const diff = (day === 0 ? -6 : 1 - day); // shift to Monday
+    d.setDate(d.getDate() + diff);
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString().slice(0, 10); // 'YYYY-MM-DD'
+  })();
+
+  const plannedWeekStarts = Object.keys(weeks)
+    .sort()
+    .filter((ws) => ws >= todayMonday)
+    .slice(0, 5);
   const hasPlans = plannedWeekStarts.length > 0;
 
   // Rebuild shopping list whenever week selection, week data, or extras change
