@@ -22,9 +22,8 @@ model User {
   notes       RecipeNote[]
 }
 
-// Custom recipes added by the user (built-ins live in data/recipes.json)
 model UserRecipe {
-  id                String   @id @default(cuid())
+  id                String   @id
   userId            String
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name              String
@@ -41,9 +40,8 @@ model UserRecipe {
   updatedAt         DateTime @updatedAt
 }
 
-// Custom extras added by the user (built-ins live in data/extras.json)
 model UserExtra {
-  id        String   @id @default(cuid())
+  id        String   @id
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name      String
@@ -54,9 +52,8 @@ model UserExtra {
   updatedAt DateTime @updatedAt
 }
 
-// Custom ingredients added by the user (built-ins live in data/ingredients.json)
 model UserIngredient {
-  id          String   @id @default(cuid())
+  id          String   @id
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name        String
@@ -65,22 +62,18 @@ model UserIngredient {
   createdAt   DateTime @default(now())
 }
 
-// One row per user per week — full week plan stored as JSON
 model WeekPlan {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  weekStart String   // ISO date YYYY-MM-DD (Monday of that week)
-  planData  Json     // DayPlan[]
-  people    Int      @default(2)
-  days      Int      @default(7)
+  weekStart String
+  data      Json
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([userId, weekStart])
 }
 
-// Favourite recipes per user (works for built-in IDs and UserRecipe IDs)
 model RecipeFavourite {
   userId   String
   recipeId String
@@ -89,7 +82,6 @@ model RecipeFavourite {
   @@id([userId, recipeId])
 }
 
-// Personal notes per user per recipe
 model RecipeNote {
   userId   String
   recipeId String

@@ -5,75 +5,65 @@ import { persist } from 'zustand/middleware';
 import type { WeekPlan } from '@/app/types';
 
 interface WeekPlanStore {
-  /** All saved week plans, keyed by weekStart ISO string (Monday). */
   weeks: Record<string, WeekPlan>;
-
-  /** Which week is currently open in WeekDetailView (ISO string or null = month view). */
+  hydrated: boolean;
   activeWeekStart: string | null;
-
-  /** Whether the wizard is currently open as a full-page overlay. */
   wizardOpen: boolean;
-
-  /** Which week the wizard is planning for (null = next Monday default). */
   wizardTargetWeek: string | null;
-
-  /** Week starts selected to include in the shopping list. */
   selectedWeeksForShopping: string[];
 
-  // ── Actions ──────────────────────────────────────────────────────────────
+  hydrate: (plans: WeekPlan[]) => void;
   saveWeek: (plan: WeekPlan) => void;
   deleteWeek: (weekStart: string) => void;
-
   setActiveWeek: (weekStart: string | null) => void;
-
-  /** Open the wizard, optionally targeting a specific week. */
   openWizardForWeek: (weekStart: string | null) => void;
-  /** Close the wizard and clear the target week. */
   closeWizard: () => void;
-
   toggleWeekForShopping: (weekStart: string) => void;
   setAllWeeksForShopping: (weekStarts: string[]) => void;
-
-  /** Toggle an extra on/off for a specific saved week. */
   toggleExtraForWeek: (weekStart: string, extraId: string) => void;
 }
 
 export const useWeekPlanStore = create<WeekPlanStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       weeks: {},
+      hydrated: false,
       activeWeekStart: null,
       wizardOpen: false,
       wizardTargetWeek: null,
       selectedWeeksForShopping: [],
 
-      saveWeek: (plan) =>
-        set((state) => ({
-          weeks: { ...state.weeks, [plan.weekStart]: plan },
-        })),
+      hydrate: (plans) =>
+        set({
+          weeks: Object.fromEntries(plans.map((p) => [p.weekStart, p])),
+          hydrated: true,
+        }),
 
-      deleteWeek: (weekStart) =>
+      saveWeek: (plan) => {
+        set((state) => ({ weeks: { ...state.weeks, [plan.weekStart]: plan } }));
+        fetch('/api/plans', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(plan),
+        }).catch(console.error);
+      },
+
+      deleteWeek: (weekStart) => {
         set((state) => {
           const weeks = { ...state.weeks };
           delete weeks[weekStart];
           return {
             weeks,
-            // Also deselect from shopping if it was selected
-            selectedWeeksForShopping: state.selectedWeeksForShopping.filter(
-              (w) => w !== weekStart
-            ),
-            // If this was the active week, close detail view
+            selectedWeeksForShopping: state.selectedWeeksForShopping.filter((w) => w !== weekStart),
             activeWeekStart: state.activeWeekStart === weekStart ? null : state.activeWeekStart,
           };
-        }),
+        });
+        fetch(`/api/plans/${encodeURIComponent(weekStart)}`, { method: 'DELETE' }).catch(console.error);
+      },
 
       setActiveWeek: (weekStart) => set({ activeWeekStart: weekStart }),
-
-      openWizardForWeek: (weekStart) =>
-        set({ wizardOpen: true, wizardTargetWeek: weekStart }),
-
-      closeWizard: () =>
-        set({ wizardOpen: false, wizardTargetWeek: null }),
+      openWizardForWeek: (weekStart) => set({ wizardOpen: true, wizardTargetWeek: weekStart }),
+      closeWizard: () => set({ wizardOpen: false, wizardTargetWeek: null }),
 
       toggleWeekForShopping: (weekStart) =>
         set((state) => {
@@ -84,10 +74,9 @@ export const useWeekPlanStore = create<WeekPlanStore>()(
           return { selectedWeeksForShopping: next };
         }),
 
-      setAllWeeksForShopping: (weekStarts) =>
-        set({ selectedWeeksForShopping: weekStarts }),
+      setAllWeeksForShopping: (weekStarts) => set({ selectedWeeksForShopping: weekStarts }),
 
-      toggleExtraForWeek: (weekStart, extraId) =>
+      toggleExtraForWeek: (weekStart, extraId) => {
         set((state) => {
           const week = state.weeks[weekStart];
           if (!week) return state;
@@ -95,11 +84,23 @@ export const useWeekPlanStore = create<WeekPlanStore>()(
           const next = current.includes(extraId)
             ? current.filter((id) => id !== extraId)
             : [...current, extraId];
-          return {
-            weeks: { ...state.weeks, [weekStart]: { ...week, selectedExtras: next } },
-          };
-        }),
+          const updated = { ...week, selectedExtras: next };
+          fetch('/api/plans', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updated),
+          }).catch(console.error);
+          return { weeks: { ...state.weeks, [weekStart]: updated } };
+        });
+      },
     }),
-    { name: 'kitchenflow-weekplans' }
+    {
+      name: 'weekcraft-ui-v1',
+      // Only persist UI state — actual plan data comes from the DB
+      partialize: (state) => ({
+        activeWeekStart: state.activeWeekStart,
+        selectedWeeksForShopping: state.selectedWeeksForShopping,
+      }),
+    }
   )
 );

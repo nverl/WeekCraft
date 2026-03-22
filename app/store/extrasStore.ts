@@ -1,7 +1,6 @@
 'use client';
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { Extra, ExtraCategory, Ingredient } from '@/app/types';
 import seedData from '@/data/extras.json';
 
@@ -9,75 +8,57 @@ const SEED_EXTRAS = seedData as Extra[];
 const SEED_IDS = new Set(SEED_EXTRAS.map((e) => e.id));
 
 interface ExtrasStore {
-  /** All available extras — seed (possibly user-edited) + user-created. */
   extras: Extra[];
+  hydrated: boolean;
 
-  /** Add a brand-new custom extra. */
+  hydrate: (userExtras: Extra[]) => void;
   addExtra: (data: { name: string; emoji: string; category: ExtraCategory; ingredients?: Ingredient[] }) => void;
-  /** Update name/emoji/category/ingredients for any extra. Marks it isCustom so edits survive reloads. */
   updateExtra: (id: string, data: Partial<Omit<Extra, 'id'>>) => void;
-  /** Remove an extra by ID. */
   removeExtra: (id: string) => void;
 }
 
-export const useExtrasStore = create<ExtrasStore>()(
-  persist(
-    (set) => ({
-      extras: SEED_EXTRAS,
+export const useExtrasStore = create<ExtrasStore>()((set, get) => ({
+  extras: SEED_EXTRAS,
+  hydrated: false,
 
-      addExtra: ({ name, emoji, category, ingredients = [] }) =>
-        set((state) => ({
-          extras: [
-            ...state.extras,
-            {
-              id: `custom-${Date.now()}`,
-              name,
-              emoji,
-              category,
-              ingredients,
-              isCustom: true,
-            },
-          ],
-        })),
+  hydrate: (userExtras) => {
+    const userById = new Map(userExtras.map((e) => [e.id, e]));
+    // Seed extras: use user's edited version if they customized it
+    const resolved = SEED_EXTRAS.map((seed) => userById.get(seed.id) ?? seed);
+    // Truly new extras not in seed
+    const custom = userExtras.filter((e) => !SEED_IDS.has(e.id));
+    set({ extras: [...resolved, ...custom], hydrated: true });
+  },
 
-      updateExtra: (id, data) =>
-        set((state) => ({
-          extras: state.extras.map((e) =>
-            e.id === id ? { ...e, ...data, isCustom: true } : e
-          ),
-        })),
+  addExtra: ({ name, emoji, category, ingredients = [] }) => {
+    const extra: Extra = {
+      id: `custom-extra-${crypto.randomUUID()}`,
+      name, emoji, category, ingredients, isCustom: true,
+    };
+    set((state) => ({ extras: [...state.extras, extra] }));
+    fetch('/api/user-extras', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(extra),
+    }).catch(console.error);
+  },
 
-      removeExtra: (id) =>
-        set((state) => ({
-          extras: state.extras.filter((e) => e.id !== id),
-        })),
-    }),
-    {
-      // v2: bumps key so everyone picks up fresh seed data (isStaple fix)
-      name: 'kitchenflow-extras-v2',
-
-      merge: (persisted, current) => {
-        const p = persisted as ExtrasStore;
-        const persistedExtras: Extra[] = p.extras ?? [];
-
-        // Build a map of persisted extras by id
-        const persistedById = new Map(persistedExtras.map((e) => [e.id, e]));
-
-        // For each seed extra: use the user's edited version if they modified it (isCustom),
-        // otherwise always use fresh seed data (picks up isStaple fixes, etc.)
-        const resolvedSeeds = SEED_EXTRAS.map((seed) => {
-          const saved = persistedById.get(seed.id);
-          return saved?.isCustom ? saved : seed;
-        });
-
-        // Also keep any user-created extras (custom IDs not in seed)
-        const userCreated = persistedExtras.filter((e) => e.isCustom && !SEED_IDS.has(e.id));
-
-        return {
-          ...current,
-          extras: [...resolvedSeeds, ...userCreated],
-        };
-      },
+  updateExtra: (id, data) => {
+    set((state) => ({
+      extras: state.extras.map((e) => e.id === id ? { ...e, ...data, isCustom: true } : e),
+    }));
+    const updated = get().extras.find((e) => e.id === id);
+    if (updated) {
+      fetch(`/api/user-extras/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...updated, ...data, isCustom: true }),
+      }).catch(console.error);
     }
-  )
-);
+  },
+
+  removeExtra: (id) => {
+    set((state) => ({ extras: state.extras.filter((e) => e.id !== id) }));
+    fetch(`/api/user-extras/${id}`, { method: 'DELETE' }).catch(console.error);
+  },
+}));

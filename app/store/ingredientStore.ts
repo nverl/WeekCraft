@@ -1,7 +1,6 @@
 'use client';
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { IngredientEntry } from '@/app/types';
 import seedData from '@/data/ingredients.json';
 
@@ -10,66 +9,51 @@ const SEED_IDS = new Set(SEED_INGREDIENTS.map((e) => e.id));
 
 interface IngredientStore {
   ingredients: IngredientEntry[];
+  hydrated: boolean;
+
+  hydrate: (userIngredients: IngredientEntry[]) => void;
   addIngredient: (data: Omit<IngredientEntry, 'id' | 'isCustom'>) => void;
   updateIngredient: (id: string, data: Partial<Omit<IngredientEntry, 'id'>>) => void;
   removeIngredient: (id: string) => void;
 }
 
-export const useIngredientStore = create<IngredientStore>()(
-  persist(
-    (set) => ({
-      ingredients: SEED_INGREDIENTS,
+export const useIngredientStore = create<IngredientStore>()((set) => ({
+  ingredients: SEED_INGREDIENTS,
+  hydrated: false,
 
-      addIngredient: ({ name, defaultUnit, aisle }) =>
-        set((state) => ({
-          ingredients: [
-            ...state.ingredients,
-            {
-              id: `custom-ing-${Date.now()}`,
-              name,
-              defaultUnit,
-              aisle,
-              isCustom: true,
-            },
-          ],
-        })),
+  hydrate: (userIngredients) => {
+    const userById = new Map(userIngredients.map((e) => [e.id, e]));
+    const resolved = SEED_INGREDIENTS.map((seed) => userById.get(seed.id) ?? seed);
+    const custom = userIngredients.filter((e) => !SEED_IDS.has(e.id));
+    set({ ingredients: [...resolved, ...custom], hydrated: true });
+  },
 
-      updateIngredient: (id, data) =>
-        set((state) => ({
-          ingredients: state.ingredients.map((e) =>
-            e.id === id ? { ...e, ...data, isCustom: true } : e
-          ),
-        })),
+  addIngredient: ({ name, defaultUnit, aisle }) => {
+    const entry: IngredientEntry = {
+      id: `custom-ing-${crypto.randomUUID()}`,
+      name, defaultUnit, aisle, isCustom: true,
+    };
+    set((state) => ({ ingredients: [...state.ingredients, entry] }));
+    fetch('/api/user-ingredients', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry),
+    }).catch(console.error);
+  },
 
-      removeIngredient: (id) =>
-        set((state) => ({
-          ingredients: state.ingredients.filter((e) => e.id !== id),
-        })),
-    }),
-    {
-      name: 'kitchenflow-ingredients-v1',
+  updateIngredient: (id, data) => {
+    set((state) => ({
+      ingredients: state.ingredients.map((e) => e.id === id ? { ...e, ...data, isCustom: true } : e),
+    }));
+    fetch(`/api/user-ingredients/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }).catch(console.error);
+  },
 
-      merge: (persisted, current) => {
-        const p = persisted as IngredientStore;
-        const persistedIngredients: IngredientEntry[] = p.ingredients ?? [];
-        const persistedById = new Map(persistedIngredients.map((e) => [e.id, e]));
-
-        // Always use fresh seed unless the user edited it
-        const resolvedSeeds = SEED_INGREDIENTS.map((seed) => {
-          const saved = persistedById.get(seed.id);
-          return saved?.isCustom ? saved : seed;
-        });
-
-        // Keep user-created custom entries (not in seed)
-        const userCreated = persistedIngredients.filter(
-          (e) => e.isCustom && !SEED_IDS.has(e.id)
-        );
-
-        return {
-          ...current,
-          ingredients: [...resolvedSeeds, ...userCreated],
-        };
-      },
-    }
-  )
-);
+  removeIngredient: (id) => {
+    set((state) => ({ ingredients: state.ingredients.filter((e) => e.id !== id) }));
+    fetch(`/api/user-ingredients/${id}`, { method: 'DELETE' }).catch(console.error);
+  },
+}));

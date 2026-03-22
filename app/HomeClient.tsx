@@ -11,6 +11,7 @@ import MonthCalendar from '@/app/components/calendar/MonthCalendar';
 import WeekDetailView from '@/app/components/calendar/WeekDetailView';
 import ShoppingList from '@/app/components/shopping/ShoppingList';
 import RecipesView from '@/app/components/recipes/RecipesView';
+import DataLoader from '@/app/components/DataLoader';
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -33,7 +34,7 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
   const { data: session } = useSession();
   const { dayConfigs, people, selectedExtras, resetWizard } = useWizardStore();
   const {
-    weeks, wizardOpen, activeWeekStart,
+    weeks, wizardOpen, activeWeekStart, hydrated,
     saveWeek, closeWizard, openWizardForWeek,
     toggleWeekForShopping, selectedWeeksForShopping,
     setActiveWeek,
@@ -45,7 +46,7 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
   const allRecipes: Recipe[] = [...seedRecipes, ...customRecipes];
 
   const hasPlans = Object.keys(weeks).length > 0;
-  const showWizard = wizardOpen || !hasPlans;
+  const showWizard = wizardOpen || (!hydrated ? false : !hasPlans);
 
   // ── Wizard complete handler ───────────────────────────────────────────────
   const handleWizardComplete = (plan: DayPlan[], targetWeekStart: string | null) => {
@@ -83,11 +84,13 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
   // ── Wizard full-page ──────────────────────────────────────────────────────
   if (showWizard) {
     return (
-      <WizardContainer
-        recipes={allRecipes}
-        onComplete={handleWizardComplete}
-        onCancel={hasPlans ? handleWizardCancel : undefined}
-      />
+      <DataLoader>
+        <WizardContainer
+          recipes={allRecipes}
+          onComplete={handleWizardComplete}
+          onCancel={hasPlans ? handleWizardCancel : undefined}
+        />
+      </DataLoader>
     );
   }
 
@@ -109,58 +112,70 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
 
   // ── Main App ──────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-screen bg-zinc-50 overflow-hidden">
-      {/* Top app bar */}
-      <header className="bg-white border-b border-zinc-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <Sparkles size={18} className="text-orange-500" />
-          <span className="font-black text-zinc-900">WeekCraft</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleNewPlan}
-            className="text-xs text-zinc-400 hover:text-zinc-600 underline cursor-pointer"
-          >
-            New plan
-          </button>
-          <Link
-            href="/settings"
-            className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center text-white text-xs font-black hover:bg-zinc-700 transition flex-shrink-0"
-            aria-label="Account settings"
-          >
-            {(session?.user?.name ?? '?').slice(0, 2).toUpperCase()}
-          </Link>
-        </div>
-      </header>
+    <DataLoader>
+      <div className="flex flex-col h-screen bg-zinc-50 overflow-hidden">
+        {/* Loading overlay while data syncs */}
+        {!hydrated && (
+          <div className="absolute inset-0 z-50 bg-white flex items-center justify-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-8 h-8 border-2 border-zinc-200 border-t-zinc-900 rounded-full animate-spin" />
+              <p className="text-sm text-zinc-400 font-medium">Loading your data…</p>
+            </div>
+          </div>
+        )}
 
-      {/* View */}
-      <div className="flex-1 overflow-hidden">
-        {view === 'home' && <HomeView recipes={allRecipes} onShowAllWeeks={handleShowAllWeeks} />}
-        {view === 'calendar' && calendarContent()}
-        {view === 'shopping' && <ShoppingList />}
-        {view === 'recipes'  && <RecipesView seedRecipes={seedRecipes} />}
+        {/* Top app bar */}
+        <header className="bg-white border-b border-zinc-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <Sparkles size={18} className="text-orange-500" />
+            <span className="font-black text-zinc-900">WeekCraft</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleNewPlan}
+              className="text-xs text-zinc-400 hover:text-zinc-600 underline cursor-pointer"
+            >
+              New plan
+            </button>
+            <Link
+              href="/settings"
+              className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center text-white text-xs font-black hover:bg-zinc-700 transition flex-shrink-0"
+              aria-label="Account settings"
+            >
+              {(session?.user?.name ?? '?').slice(0, 2).toUpperCase()}
+            </Link>
+          </div>
+        </header>
+
+        {/* View */}
+        <div className="flex-1 overflow-hidden">
+          {view === 'home' && <HomeView recipes={allRecipes} onShowAllWeeks={handleShowAllWeeks} />}
+          {view === 'calendar' && calendarContent()}
+          {view === 'shopping' && <ShoppingList />}
+          {view === 'recipes'  && <RecipesView seedRecipes={seedRecipes} />}
+        </div>
+
+        {/* Bottom nav */}
+        <nav className="bg-white border-t border-zinc-200 px-4 py-2 flex-shrink-0">
+          <div className="flex justify-around max-w-sm mx-auto">
+            {NAV.map((item) => {
+              const isActive = view === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setView(item.id)}
+                  className={`flex flex-col items-center gap-1 px-4 py-2 rounded-2xl transition-all cursor-pointer
+                    ${isActive ? 'text-zinc-900' : 'text-zinc-400 hover:text-zinc-600'}`}
+                >
+                  {item.icon}
+                  <span className="text-xs font-semibold">{item.label}</span>
+                  {isActive && <div className="w-1 h-1 rounded-full bg-zinc-900" />}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
       </div>
-
-      {/* Bottom nav */}
-      <nav className="bg-white border-t border-zinc-200 px-4 py-2 flex-shrink-0">
-        <div className="flex justify-around max-w-sm mx-auto">
-          {NAV.map((item) => {
-            const isActive = view === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setView(item.id)}
-                className={`flex flex-col items-center gap-1 px-4 py-2 rounded-2xl transition-all cursor-pointer
-                  ${isActive ? 'text-zinc-900' : 'text-zinc-400 hover:text-zinc-600'}`}
-              >
-                {item.icon}
-                <span className="text-xs font-semibold">{item.label}</span>
-                {isActive && <div className="w-1 h-1 rounded-full bg-zinc-900" />}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
-    </div>
+    </DataLoader>
   );
 }
