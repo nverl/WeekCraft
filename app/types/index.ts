@@ -1,4 +1,10 @@
-export type DayLabel = 'healthy' | 'low-carb' | 'cheat';
+export type DayLabel = 'healthy' | 'low-carb' | 'cheat' | 'high-protein' | 'any';
+
+/** A selected extra with a quantity (e.g. 3 smoothies). */
+export interface SelectedExtra {
+  id: string;
+  qty: number;
+}
 export type ExtraCategory = 'drink' | 'breakfast' | 'snack' | 'other';
 
 export interface Ingredient {
@@ -85,7 +91,7 @@ export interface WeekPlan {
   dayConfigs: DayConfig[]; // per-day config (replaces legacy dayLabels)
   people: number;
   days: DayPlan[];         // 7 entries (Mon–Sun)
-  selectedExtras?: string[]; // IDs of selected extras for this week
+  selectedExtras?: SelectedExtra[]; // extras selected for this week with quantities
 }
 
 // ─── Wizard state ─────────────────────────────────────────────────────────────
@@ -97,5 +103,5 @@ export interface WizardState {
   plan: DayPlan[];
   currentStep: 1 | 2 | 3;
   targetWeekStart: string | null; // ISO Monday — which week this wizard run is for
-  selectedExtras: string[];       // extras picked during this wizard session
+  selectedExtras: SelectedExtra[]; // extras picked during this wizard session with quantities
 }

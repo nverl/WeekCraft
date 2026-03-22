@@ -251,8 +251,9 @@ export default function WeekDetailView({ weekPlan, recipes }: WeekDetailViewProp
   // IDs of recipes already assigned this week — for "This week" badge in picker
   const usedThisWeek = new Set(days.filter((d) => d.recipe).map((d) => d.recipe!.id));
 
-  // Extras for this week — read live from weekPlanStore so toggles reflect immediately
-  const selectedExtraIds = new Set(weeks[weekPlan.weekStart]?.selectedExtras ?? []);
+  // Extras for this week — backward-compat: entries may be strings or {id,qty}
+  const rawExtras = weeks[weekPlan.weekStart]?.selectedExtras ?? [];
+  const selectedExtraIds = new Set(rawExtras.map((e) => typeof e === 'string' ? e : e.id));
   const weekExtras: Extra[] = extras.filter((e) => selectedExtraIds.has(e.id));
 
   // Derive modal plan from index (stays fresh after swaps)

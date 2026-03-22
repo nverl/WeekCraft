@@ -5,11 +5,11 @@ import {
   ShoppingCart, Check, ChevronDown, ChevronUp,
   SlidersHorizontal, Package, ListTodo, Copy, CheckCheck,
 } from 'lucide-react';
-import { useShoppingStore } from '@/app/store/shoppingStore';
+import { useShoppingStore, type ExtraWithQty } from '@/app/store/shoppingStore';
 import { useWeekPlanStore } from '@/app/store/weekPlanStore';
 import { useExtrasStore } from '@/app/store/extrasStore';
 import { formatWeekRange } from '@/app/lib/weekUtils';
-import type { Extra, ShoppingItem } from '@/app/types';
+import type { ShoppingItem } from '@/app/types';
 
 // ── Aisle group ───────────────────────────────────────────────────────────────
 
@@ -131,18 +131,22 @@ export default function ShoppingList() {
       .filter((ws) => weeks[ws])
       .map((ws) => weeks[ws].days);
 
-    // Collect extras from all selected weeks (de-duped by id)
+    // Collect extras from all selected weeks — aggregate qty per extra id
     const extrasMap = new Map(extras.map((e) => [e.id, e]));
-    const seenExtraIds = new Set<string>();
-    const weekExtras: Extra[] = [];
+    const qtyById = new Map<string, number>();
     for (const ws of selectedWeeksForShopping) {
       if (!weeks[ws]) continue;
-      for (const id of weeks[ws].selectedExtras ?? []) {
-        if (!seenExtraIds.has(id) && extrasMap.has(id)) {
-          seenExtraIds.add(id);
-          weekExtras.push(extrasMap.get(id)!);
-        }
+      for (const sel of weeks[ws].selectedExtras ?? []) {
+        // backward-compat: old data may be plain strings
+        const id = typeof sel === 'string' ? sel : sel.id;
+        const qty = typeof sel === 'string' ? 1 : sel.qty;
+        qtyById.set(id, (qtyById.get(id) ?? 0) + qty);
       }
+    }
+    const weekExtras: ExtraWithQty[] = [];
+    for (const [id, qty] of qtyById) {
+      const extra = extrasMap.get(id);
+      if (extra) weekExtras.push({ extra, qty });
     }
 
     rebuildMultiList(selectedPlans, weekExtras);

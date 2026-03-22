@@ -5,10 +5,12 @@ import { X, Search, Clock, Flame } from 'lucide-react';
 import { parseISODuration } from '@/app/store/wizardStore';
 import type { Recipe, DayLabel } from '@/app/types';
 
-const LABEL_BADGE: Record<DayLabel, { color: string; bg: string; short: string }> = {
-  healthy:    { color: 'text-emerald-700', bg: 'bg-emerald-50', short: 'H'  },
-  'low-carb': { color: 'text-sky-700',     bg: 'bg-sky-50',     short: 'LC' },
-  cheat:      { color: 'text-orange-700',  bg: 'bg-orange-50',  short: 'C'  },
+const LABEL_BADGE: Record<string, { color: string; bg: string; short: string }> = {
+  healthy:        { color: 'text-emerald-700', bg: 'bg-emerald-50', short: 'H'  },
+  'high-protein': { color: 'text-violet-700',  bg: 'bg-violet-50',  short: 'HP' },
+  'low-carb':     { color: 'text-sky-700',     bg: 'bg-sky-50',     short: 'LC' },
+  cheat:          { color: 'text-orange-700',  bg: 'bg-orange-50',  short: 'C'  },
+  any:            { color: 'text-zinc-600',    bg: 'bg-zinc-50',    short: '~'  },
 };
 
 interface RecipePickerModalProps {

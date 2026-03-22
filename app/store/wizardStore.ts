@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { DayLabel, DayConfig, DayPlan, Recipe, Ingredient, WizardState } from '@/app/types';
+import type { DayLabel, DayConfig, DayPlan, Recipe, Ingredient, WizardState, SelectedExtra } from '@/app/types';
 import { parseISOToMins, getNextMonday } from '@/app/lib/weekUtils';
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -67,8 +67,11 @@ function generatePlan(
 
     const label = config.label;
 
-    // Start with recipes matching this day's label
-    let pool = recipes.filter((r) => r.labels.includes(label));
+    // 'any' = no label filter — draw from all recipes randomly
+    // Otherwise filter by matching label
+    let pool = label === 'any'
+      ? [...recipes]
+      : recipes.filter((r) => r.labels.includes(label as DayLabel));
 
     // Apply per-day maxPrepMins filter (fall back if it empties pool)
     if (config.maxPrepMins !== null) {
@@ -114,8 +117,8 @@ interface WizardStore extends WizardState {
   setStep: (step: 1 | 2 | 3) => void;
   setTargetWeekStart: (weekStart: string | null) => void;
   setPlan: (days: DayPlan[]) => void;
-  // Extras
-  toggleWizardExtra: (extraId: string) => void;
+  // Extras (qty-based: 0 = deselected)
+  setWizardExtraQty: (extraId: string, qty: number) => void;
   // Plan lifecycle
   confirmPlan: (recipes: Recipe[]) => void;
   resetWizard: () => void;
@@ -133,7 +136,7 @@ const initialState: WizardState = {
   plan: [],
   currentStep: 1,
   targetWeekStart: null,
-  selectedExtras: [],
+  selectedExtras: [] as SelectedExtra[],
 };
 
 export const useWizardStore = create<WizardStore>()(
@@ -158,12 +161,17 @@ export const useWizardStore = create<WizardStore>()(
 
       setPlan: (plan) => set({ plan }),
 
-      toggleWizardExtra: (extraId) =>
-        set((state) => ({
-          selectedExtras: state.selectedExtras.includes(extraId)
-            ? state.selectedExtras.filter((id) => id !== extraId)
-            : [...state.selectedExtras, extraId],
-        })),
+      setWizardExtraQty: (extraId, qty) =>
+        set((state) => {
+          if (qty <= 0) {
+            return { selectedExtras: state.selectedExtras.filter((e) => e.id !== extraId) };
+          }
+          const exists = state.selectedExtras.find((e) => e.id === extraId);
+          if (exists) {
+            return { selectedExtras: state.selectedExtras.map((e) => e.id === extraId ? { ...e, qty } : e) };
+          }
+          return { selectedExtras: [...state.selectedExtras, { id: extraId, qty }] };
+        }),
 
       confirmPlan: (recipes) => {
         const { dayConfigs, people, days, targetWeekStart } = get();
@@ -245,7 +253,7 @@ export const useWizardStore = create<WizardStore>()(
       },
     }),
     {
-      name: 'kitchenflow-wizard-v2', // bumped to avoid stale shape from old persist
+      name: 'weekcraft-wizard-v3', // bumped: selectedExtras now {id,qty}[], added high-protein/any
     }
   )
 );

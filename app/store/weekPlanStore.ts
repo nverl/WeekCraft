@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { WeekPlan } from '@/app/types';
+import type { WeekPlan, SelectedExtra } from '@/app/types';
 
 interface WeekPlanStore {
   weeks: Record<string, WeekPlan>;
@@ -80,10 +80,13 @@ export const useWeekPlanStore = create<WeekPlanStore>()(
         set((state) => {
           const week = state.weeks[weekStart];
           if (!week) return state;
-          const current = week.selectedExtras ?? [];
-          const next = current.includes(extraId)
-            ? current.filter((id) => id !== extraId)
-            : [...current, extraId];
+          const current: SelectedExtra[] = (week.selectedExtras ?? []).map((e) =>
+            typeof e === 'string' ? { id: e, qty: 1 } : e
+          );
+          const exists = current.find((e) => e.id === extraId);
+          const next = exists
+            ? current.filter((e) => e.id !== extraId)        // remove
+            : [...current, { id: extraId, qty: 1 }];         // add with qty 1
           const updated = { ...week, selectedExtras: next };
           fetch('/api/plans', {
             method: 'PUT',

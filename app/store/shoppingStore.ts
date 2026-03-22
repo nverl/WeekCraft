@@ -4,19 +4,21 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { DayPlan, Extra, ShoppingItem } from '@/app/types';
 
+export interface ExtraWithQty { extra: Extra; qty: number }
+
 interface ShoppingStore {
   items: ShoppingItem[];
   showStaples: boolean;
   buildList: (plan: DayPlan[]) => void;
-  rebuildList: (plan: DayPlan[]) => void;                              // rebuilds but preserves inPantry state
-  rebuildMultiList: (plans: DayPlan[][], extras?: Extra[]) => void;   // multi-week: aggregates all plans + extras
+  rebuildList: (plan: DayPlan[]) => void;
+  rebuildMultiList: (plans: DayPlan[][], extras?: ExtraWithQty[]) => void;
   togglePantry: (name: string) => void;
   toggleShowStaples: () => void;
   clearList: () => void;
 }
 
-/** Aggregate ingredients across multiple plans and optional extras (for multi-week shopping). */
-function buildMultiShoppingList(plans: DayPlan[][], extras: Extra[] = []): ShoppingItem[] {
+/** Aggregate ingredients across multiple plans and optional extras (scaled by qty). */
+function buildMultiShoppingList(plans: DayPlan[][], extras: ExtraWithQty[] = []): ShoppingItem[] {
   const itemMap = new Map<string, ShoppingItem>();
 
   // ── Recipe ingredients ───────────────────────────────────────────────────
@@ -41,19 +43,20 @@ function buildMultiShoppingList(plans: DayPlan[][], extras: Extra[] = []): Shopp
     }
   }
 
-  // ── Extras ingredients ───────────────────────────────────────────────────
-  for (const extra of extras) {
+  // ── Extras ingredients — scaled by qty ──────────────────────────────────
+  for (const { extra, qty } of extras) {
     for (const ing of extra.ingredients) {
+      const scaledAmt = Math.round(ing.amount * qty * 100) / 100;
       const key = `${ing.name}__${ing.unit}__${ing.aisle}`;
       const existing = itemMap.get(key);
       if (existing) {
-        existing.scaledAmount = Math.round((existing.scaledAmount + ing.amount) * 100) / 100;
+        existing.scaledAmount = Math.round((existing.scaledAmount + scaledAmt) * 100) / 100;
       } else {
         itemMap.set(key, {
           ...ing,
           recipeId: extra.id,
           recipeName: extra.name,
-          scaledAmount: ing.amount,
+          scaledAmount: scaledAmt,
           inPantry: false,
         });
       }
@@ -89,7 +92,7 @@ export const useShoppingStore = create<ShoppingStore>()(
       },
 
       // Rebuilds from multiple week plans (+ extras) while preserving pantry state
-      rebuildMultiList: (plans, extras = []) => {
+      rebuildMultiList: (plans, extras = [] as ExtraWithQty[]) => {
         const pantryMap = new Map(get().items.map((i) => [i.name, i.inPantry]));
         const fresh = buildMultiShoppingList(plans, extras);
         set({

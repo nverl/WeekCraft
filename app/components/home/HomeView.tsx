@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import {
   Clock, Flame, Users, Leaf, Zap, ChefHat,
-  ArrowLeftRight, Coffee, Plus, CalendarDays, X,
+  ArrowLeftRight, Coffee, Plus, CalendarDays, X, Dumbbell, Shuffle,
 } from 'lucide-react';
 import { useWeekPlanStore } from '@/app/store/weekPlanStore';
 import { useWizardStore, parseISODuration } from '@/app/store/wizardStore';
@@ -13,28 +13,34 @@ import { getWeekStartISO } from '@/app/lib/weekUtils';
 import RecipeModal from '@/app/components/calendar/RecipeModal';
 import RecipePickerModal from '@/app/components/calendar/RecipePickerModal';
 import ExtraPickerModal from '@/app/components/extras/ExtraPickerModal';
-import type { Recipe, DayPlan, DayLabel, Extra } from '@/app/types';
+import type { Recipe, DayPlan, DayLabel, Extra, SelectedExtra } from '@/app/types';
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
 const LABEL_CONFIG: Record<string, { icon: React.ReactNode; bg: string; color: string; label: string }> = {
-  healthy:    { icon: <Leaf size={12} />,  bg: 'bg-emerald-100', color: 'text-emerald-700', label: 'Healthy'   },
-  'low-carb': { icon: <Zap size={12} />,   bg: 'bg-sky-100',     color: 'text-sky-700',     label: 'Low Carb'  },
-  cheat:      { icon: <Flame size={12} />, bg: 'bg-orange-100',  color: 'text-orange-700',  label: 'Cheat Day' },
+  healthy:       { icon: <Leaf size={12} />,     bg: 'bg-emerald-100', color: 'text-emerald-700', label: 'Healthy'      },
+  'high-protein':{ icon: <Dumbbell size={12} />, bg: 'bg-violet-100',  color: 'text-violet-700',  label: 'High Protein' },
+  'low-carb':    { icon: <Zap size={12} />,      bg: 'bg-sky-100',     color: 'text-sky-700',     label: 'Low Carb'    },
+  cheat:         { icon: <Flame size={12} />,    bg: 'bg-orange-100',  color: 'text-orange-700',  label: 'Cheat Day'   },
+  any:           { icon: <Shuffle size={12} />,  bg: 'bg-zinc-100',    color: 'text-zinc-600',    label: 'Any'         },
 };
 
 const LABEL_DOT: Record<string, string> = {
-  healthy:    'bg-emerald-400',
-  'low-carb': 'bg-sky-400',
-  cheat:      'bg-orange-400',
-  none:       'bg-zinc-200',
+  healthy:        'bg-emerald-400',
+  'high-protein': 'bg-violet-400',
+  'low-carb':     'bg-sky-400',
+  cheat:          'bg-orange-400',
+  any:            'bg-zinc-400',
+  none:           'bg-zinc-200',
 };
 
 const LABEL_GLOW: Record<string, string> = {
-  healthy:    'from-emerald-50 to-white',
-  'low-carb': 'from-sky-50 to-white',
-  cheat:      'from-orange-50 to-white',
-  none:       'from-zinc-50 to-white',
+  healthy:        'from-emerald-50 to-white',
+  'high-protein': 'from-violet-50 to-white',
+  'low-carb':     'from-sky-50 to-white',
+  cheat:          'from-orange-50 to-white',
+  any:            'from-zinc-50 to-white',
+  none:           'from-zinc-50 to-white',
 };
 
 const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -132,9 +138,15 @@ export default function HomeView({ recipes, onShowAllWeeks }: HomeViewProps) {
   const activeDay: DayPlan | undefined = days[activeDayIndex];
   const isToday = activeDayIndex === todayDayIndex;
 
-  // Extras
-  const selectedExtraIds = new Set(weeks[todayWeekStart]?.selectedExtras ?? []);
-  const weekExtras: Extra[] = extras.filter((e) => selectedExtraIds.has(e.id));
+  // Extras — backward-compat: entries may be plain strings (old data) or {id,qty}
+  const rawExtras = weeks[todayWeekStart]?.selectedExtras ?? [];
+  const selectedExtrasMap = new Map<string, number>(
+    rawExtras.map((e) => typeof e === 'string' ? [e, 1] : [e.id, e.qty])
+  );
+  const selectedExtraIds = new Set(selectedExtrasMap.keys());
+  const weekExtras: (Extra & { qty: number })[] = extras
+    .filter((e) => selectedExtraIds.has(e.id))
+    .map((e) => ({ ...e, qty: selectedExtrasMap.get(e.id) ?? 1 }));
 
   // Used recipe IDs (for picker "already used" badge)
   const usedIds = new Set(days.filter((d) => d.recipe).map((d) => d.recipe!.id));
@@ -346,7 +358,7 @@ export default function HomeView({ recipes, onShowAllWeeks }: HomeViewProps) {
                   key={extra.id}
                   className="flex items-center gap-1.5 bg-zinc-100 rounded-full pl-2.5 pr-1.5 py-1.5 text-xs font-semibold text-zinc-700"
                 >
-                  {extra.emoji} {extra.name}
+                  {extra.emoji} {extra.qty > 1 && <span className="text-zinc-500">{extra.qty}×</span>}{extra.name}
                   <button
                     onClick={() => toggleExtraForWeek(todayWeekStart, extra.id)}
                     className="w-4 h-4 flex items-center justify-center rounded-full bg-zinc-200 hover:bg-zinc-300 text-zinc-500 cursor-pointer transition-colors"

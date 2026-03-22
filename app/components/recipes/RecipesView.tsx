@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import {
   Plus, Clock, Flame, Leaf, Zap, Pencil, Trash2, Lock,
-  Link, Youtube, Star, Search, X, StickyNote,
+  Link, Youtube, Star, Search, X, StickyNote, Dumbbell, Shuffle,
 } from 'lucide-react';
 import { parseISODuration } from '@/app/store/wizardStore';
 import { useRecipeStore } from '@/app/store/recipeStore';
@@ -14,10 +14,12 @@ import type { Recipe, DayLabel } from '@/app/types';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const LABEL_CONFIG: Record<DayLabel, { icon: React.ReactNode; color: string; bg: string; text: string }> = {
-  healthy:    { icon: <Leaf size={12} />,  color: 'text-emerald-700', bg: 'bg-emerald-100', text: 'Healthy'   },
-  'low-carb': { icon: <Zap size={12} />,   color: 'text-sky-700',     bg: 'bg-sky-100',     text: 'Low Carb'  },
-  cheat:      { icon: <Flame size={12} />, color: 'text-orange-700',  bg: 'bg-orange-100',  text: 'Cheat Day' },
+const LABEL_CONFIG: Record<string, { icon: React.ReactNode; color: string; bg: string; text: string }> = {
+  healthy:        { icon: <Leaf size={12} />,     color: 'text-emerald-700', bg: 'bg-emerald-100', text: 'Healthy'      },
+  'high-protein': { icon: <Dumbbell size={12} />, color: 'text-violet-700',  bg: 'bg-violet-100',  text: 'High Protein' },
+  'low-carb':     { icon: <Zap size={12} />,      color: 'text-sky-700',     bg: 'bg-sky-100',     text: 'Low Carb'     },
+  cheat:          { icon: <Flame size={12} />,    color: 'text-orange-700',  bg: 'bg-orange-100',  text: 'Cheat Day'    },
+  any:            { icon: <Shuffle size={12} />,  color: 'text-zinc-600',    bg: 'bg-zinc-100',    text: 'Any'          },
 };
 
 // ── Recipe card ───────────────────────────────────────────────────────────────

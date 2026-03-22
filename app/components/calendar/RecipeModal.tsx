@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Clock, Flame, Users, Leaf, Zap, ChefHat, ExternalLink, StickyNote } from 'lucide-react';
+import { X, Clock, Flame, Users, Leaf, Zap, ChefHat, ExternalLink, StickyNote, Dumbbell, Shuffle } from 'lucide-react';
 import { parseISODuration } from '@/app/store/wizardStore';
 import { useRecipeStore } from '@/app/store/recipeStore';
 import type { DayPlan, DayLabel } from '@/app/types';
@@ -24,10 +24,12 @@ function extractYoutubeId(url: string): string | null {
   return null;
 }
 
-const LABEL_CONFIG: Record<DayLabel, { icon: React.ReactNode; color: string; bg: string; text: string }> = {
-  healthy:   { icon: <Leaf size={13} />,  color: 'text-emerald-700', bg: 'bg-emerald-100', text: 'Healthy'  },
-  'low-carb':{ icon: <Zap size={13} />,   color: 'text-sky-700',     bg: 'bg-sky-100',     text: 'Low Carb' },
-  cheat:     { icon: <Flame size={13} />, color: 'text-orange-700',  bg: 'bg-orange-100',  text: 'Cheat Day'},
+const LABEL_CONFIG: Record<string, { icon: React.ReactNode; color: string; bg: string; text: string }> = {
+  healthy:        { icon: <Leaf size={13} />,     color: 'text-emerald-700', bg: 'bg-emerald-100', text: 'Healthy'      },
+  'high-protein': { icon: <Dumbbell size={13} />, color: 'text-violet-700',  bg: 'bg-violet-100',  text: 'High Protein' },
+  'low-carb':     { icon: <Zap size={13} />,      color: 'text-sky-700',     bg: 'bg-sky-100',     text: 'Low Carb'     },
+  cheat:          { icon: <Flame size={13} />,    color: 'text-orange-700',  bg: 'bg-orange-100',  text: 'Cheat Day'    },
+  any:            { icon: <Shuffle size={13} />,  color: 'text-zinc-600',    bg: 'bg-zinc-100',    text: 'Any'          },
 };
 
 interface RecipeModalProps {

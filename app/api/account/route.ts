@@ -11,6 +11,16 @@ export async function PATCH(req: Request) {
   const body = await req.json();
   const { type } = body;
 
+  // ── Change defaultPeople ─────────────────────────────────────────────────
+  if (type === 'defaultPeople') {
+    const { defaultPeople } = body;
+    if (typeof defaultPeople !== 'number' || defaultPeople < 1 || defaultPeople > 12) {
+      return NextResponse.json({ error: 'Must be between 1 and 12' }, { status: 400 });
+    }
+    await prisma.user.update({ where: { id: session.user.id }, data: { defaultPeople } });
+    return NextResponse.json({ defaultPeople });
+  }
+
   // ── Change username ───────────────────────────────────────────────────────
   if (type === 'username') {
     const { username } = body;

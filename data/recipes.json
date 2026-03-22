@@ -3,7 +3,8 @@
     "id": "r001",
     "name": "Grilled Salmon & Quinoa Bowl",
     "labels": [
-      "healthy"
+      "healthy",
+      "high-protein"
     ],
     "prepTimeISO": "PT30M",
     "caloriesPerPerson": 480,
@@ -448,7 +449,8 @@
     "id": "r006",
     "name": "Lettuce-Wrapped Turkey Burgers",
     "labels": [
-      "low-carb"
+      "low-carb",
+      "high-protein"
     ],
     "prepTimeISO": "PT25M",
     "caloriesPerPerson": 350,
@@ -817,7 +819,8 @@
     "name": "Egg White & Spinach Frittata",
     "labels": [
       "healthy",
-      "low-carb"
+      "low-carb",
+      "high-protein"
     ],
     "prepTimeISO": "PT25M",
     "caloriesPerPerson": 220,

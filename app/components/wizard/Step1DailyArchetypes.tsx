@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Leaf, Zap, Flame, Coffee, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { Leaf, Zap, Flame, Coffee, Clock, ChevronDown, ChevronUp, Dumbbell, Shuffle } from 'lucide-react';
 import { useWizardStore } from '@/app/store/wizardStore';
 import type { DayConfig } from '@/app/types';
 
@@ -16,6 +16,15 @@ const LABEL_OPTIONS = [
     bg: 'bg-emerald-50',
     border: 'border-emerald-300',
     ring: 'ring-emerald-400',
+  },
+  {
+    value: 'high-protein' as const,
+    icon: <Dumbbell size={14} />,
+    label: 'High Protein',
+    color: 'text-violet-700',
+    bg: 'bg-violet-50',
+    border: 'border-violet-300',
+    ring: 'ring-violet-400',
   },
   {
     value: 'low-carb' as const,
@@ -36,13 +45,22 @@ const LABEL_OPTIONS = [
     ring: 'ring-orange-400',
   },
   {
-    value: 'none' as const,
-    icon: <Coffee size={14} />,
-    label: 'None',
-    color: 'text-zinc-500',
-    bg: 'bg-zinc-100',
+    value: 'any' as const,
+    icon: <Shuffle size={14} />,
+    label: 'Any',
+    color: 'text-zinc-600',
+    bg: 'bg-zinc-50',
     border: 'border-zinc-300',
     ring: 'ring-zinc-400',
+  },
+  {
+    value: 'none' as const,
+    icon: <Coffee size={14} />,
+    label: 'Free day',
+    color: 'text-zinc-400',
+    bg: 'bg-zinc-100',
+    border: 'border-zinc-200',
+    ring: 'ring-zinc-300',
   },
 ];
 

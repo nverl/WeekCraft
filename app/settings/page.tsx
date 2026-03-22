@@ -5,7 +5,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
   ChevronLeft, User, Lock, Trash2,
-  Check, AlertCircle, Eye, EyeOff, LogOut,
+  Check, AlertCircle, Eye, EyeOff, LogOut, Users, Minus, Plus,
 } from 'lucide-react';
 
 // ── Reusable feedback pill ────────────────────────────────────────────────────
@@ -61,6 +61,11 @@ export default function SettingsPage() {
   const [memberSince, setMemberSince] = useState<string | null>(null);
   const [currentUsername, setCurrentUsername] = useState('');
 
+  // Default people
+  const [defaultPeople, setDefaultPeople] = useState(2);
+  const [peopleFeedback, setPeopleFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [peopleLoading, setPeopleLoading] = useState(false);
+
   // Username change
   const [newUsername, setNewUsername] = useState('');
   const [usernameFeedback, setUsernameFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
@@ -88,6 +93,7 @@ export default function SettingsPage() {
       .then((d) => {
         setCurrentUsername(d.username ?? '');
         setNewUsername(d.username ?? '');
+        setDefaultPeople(d.defaultPeople ?? 2);
         if (d.createdAt) {
           setMemberSince(new Date(d.createdAt).toLocaleDateString('en-GB', {
             day: 'numeric', month: 'long', year: 'numeric',
@@ -101,6 +107,22 @@ export default function SettingsPage() {
   }, [deleteOpen]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
+  async function handleDefaultPeopleChange(n: number) {
+    const clamped = Math.min(12, Math.max(1, n));
+    setDefaultPeople(clamped);
+    setPeopleFeedback(null);
+    setPeopleLoading(true);
+    const res = await fetch('/api/account', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'defaultPeople', defaultPeople: clamped }),
+    });
+    const data = await res.json();
+    setPeopleLoading(false);
+    if (!res.ok) setPeopleFeedback({ type: 'error', msg: data.error });
+    else setPeopleFeedback({ type: 'success', msg: 'Default saved' });
+  }
+
   async function handleUsernameChange(e: React.FormEvent) {
     e.preventDefault();
     setUsernameFeedback(null);
@@ -189,6 +211,37 @@ export default function SettingsPage() {
             )}
           </div>
         </div>
+
+        {/* Default people */}
+        <Section icon={<Users size={15} />} title="Default household size">
+          <div className="flex flex-col gap-3">
+            <p className="text-xs text-zinc-500">
+              Used to scale ingredients in every new meal plan. You can still adjust it per week or per meal.
+            </p>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => handleDefaultPeopleChange(defaultPeople - 1)}
+                disabled={defaultPeople <= 1}
+                className="w-10 h-10 rounded-full border-2 border-zinc-200 flex items-center justify-center text-zinc-600 hover:border-zinc-900 hover:text-zinc-900 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+              >
+                <Minus size={16} />
+              </button>
+              <div className="flex-1 text-center">
+                <span className="text-4xl font-black text-zinc-900">{defaultPeople}</span>
+                <span className="text-sm text-zinc-500 ml-1">{defaultPeople === 1 ? 'person' : 'people'}</span>
+              </div>
+              <button
+                onClick={() => handleDefaultPeopleChange(defaultPeople + 1)}
+                disabled={defaultPeople >= 12}
+                className="w-10 h-10 rounded-full border-2 border-zinc-200 flex items-center justify-center text-zinc-600 hover:border-zinc-900 hover:text-zinc-900 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+            {peopleLoading && <p className="text-xs text-zinc-400 text-center">Saving…</p>}
+            {peopleFeedback && <Feedback type={peopleFeedback.type} message={peopleFeedback.msg} />}
+          </div>
+        </Section>
 
         {/* Change username */}
         <Section icon={<User size={15} />} title="Username">

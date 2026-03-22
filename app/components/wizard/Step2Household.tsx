@@ -1,151 +1,122 @@
 'use client';
 
-import { Users, CalendarDays, Minus, Plus } from 'lucide-react';
+import { Minus, Plus, ShoppingBag } from 'lucide-react';
 import { useWizardStore } from '@/app/store/wizardStore';
 import { useExtrasStore } from '@/app/store/extrasStore';
 
-interface CounterProps {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  icon: React.ReactNode;
-  onChange: (n: number) => void;
-  suffix?: string;
+// ── Qty stepper ───────────────────────────────────────────────────────────────
+
+interface QtyStepperProps {
+  qty: number;
+  onChange: (qty: number) => void;
+  min?: number;
+  max?: number;
 }
 
-function Counter({ label, value, min, max, icon, onChange, suffix }: CounterProps) {
+function QtyStepper({ qty, onChange, min = 0, max = 20 }: QtyStepperProps) {
   return (
-    <div className="flex flex-col gap-3 bg-zinc-50 border border-zinc-200 rounded-2xl p-6">
-      <div className="flex items-center gap-2 text-zinc-600">
-        {icon}
-        <span className="text-sm font-semibold">{label}</span>
-      </div>
-      <div className="flex items-center gap-4">
-        <button
-          onClick={() => onChange(Math.max(min, value - 1))}
-          disabled={value <= min}
-          className="w-10 h-10 rounded-full border-2 border-zinc-300 flex items-center justify-center text-zinc-600 hover:border-zinc-900 hover:text-zinc-900 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
-          aria-label={`Decrease ${label}`}
-        >
-          <Minus size={16} />
-        </button>
-        <div className="flex-1 text-center">
-          <span className="text-4xl font-black text-zinc-900">{value}</span>
-          {suffix && <span className="text-sm text-zinc-500 ml-1">{suffix}</span>}
-        </div>
-        <button
-          onClick={() => onChange(Math.min(max, value + 1))}
-          disabled={value >= max}
-          className="w-10 h-10 rounded-full border-2 border-zinc-300 flex items-center justify-center text-zinc-600 hover:border-zinc-900 hover:text-zinc-900 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
-          aria-label={`Increase ${label}`}
-        >
-          <Plus size={16} />
-        </button>
-      </div>
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => onChange(Math.max(min, qty - 1))}
+        disabled={qty <= min}
+        className="w-7 h-7 rounded-full border border-zinc-300 flex items-center justify-center text-zinc-600 hover:border-zinc-900 hover:text-zinc-900 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+        aria-label="Decrease"
+      >
+        <Minus size={12} />
+      </button>
+      <span className="w-5 text-center text-sm font-black text-zinc-900">{qty}</span>
+      <button
+        type="button"
+        onClick={() => onChange(Math.min(max, qty + 1))}
+        disabled={qty >= max}
+        className="w-7 h-7 rounded-full border border-zinc-300 flex items-center justify-center text-zinc-600 hover:border-zinc-900 hover:text-zinc-900 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+        aria-label="Increase"
+      >
+        <Plus size={12} />
+      </button>
     </div>
   );
 }
 
-export default function Step2Household() {
-  const { people, days, dayConfigs, setPeople, setDays, selectedExtras, toggleWizardExtra } = useWizardStore();
+// ── Main step ─────────────────────────────────────────────────────────────────
+
+export default function Step2WeeklyExtras() {
+  const { selectedExtras, setWizardExtraQty } = useWizardStore();
   const { extras } = useExtrasStore();
 
-  // Compute summary stats from per-day configs
-  const recipeDays = dayConfigs.slice(0, days).filter((c) => c.label !== 'none').length;
-  const freeDays = days - recipeDays;
+  const totalSelected = selectedExtras.length;
 
-  // Estimate total kcal: free days use their entered calories or 500 avg; recipe days use their cap or 500 avg
-  const estKcal = dayConfigs.slice(0, days).reduce((sum, c) => {
-    if (c.label === 'none') return sum + (c.freeCalories ?? 500) * people;
-    return sum + (c.maxCalories ?? 500) * people;
-  }, 0);
+  const getQty = (id: string) =>
+    selectedExtras.find((e) => e.id === id)?.qty ?? 0;
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-zinc-900 mb-1">Household size</h2>
+      <h2 className="text-2xl font-bold text-zinc-900 mb-1">Weekly extras</h2>
       <p className="text-zinc-500 mb-6 text-sm">
-        Ingredient amounts will be scaled automatically for your household.
+        Add drinks, snacks and sides for the week. Set how many you need — ingredients are scaled automatically.
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-        <Counter
-          label="People"
-          value={people}
-          min={1}
-          max={12}
-          icon={<Users size={18} />}
-          onChange={setPeople}
-          suffix="people"
-        />
-        <Counter
-          label="Days to plan"
-          value={days}
-          min={1}
-          max={7}
-          icon={<CalendarDays size={18} />}
-          onChange={setDays}
-          suffix="days"
-        />
+      <div className="flex flex-col gap-3">
+        {extras.map((extra) => {
+          const qty = getQty(extra.id);
+          const selected = qty > 0;
+
+          return (
+            <div
+              key={extra.id}
+              className={`flex items-center justify-between gap-4 p-4 rounded-2xl border transition-all
+                ${selected
+                  ? 'border-zinc-300 bg-white shadow-sm'
+                  : 'border-zinc-100 bg-zinc-50'
+                }`}
+            >
+              {/* Left — extra info */}
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <span className="text-2xl flex-shrink-0">{extra.emoji}</span>
+                <div className="min-w-0">
+                  <p className={`text-sm font-bold leading-tight truncate ${selected ? 'text-zinc-900' : 'text-zinc-500'}`}>
+                    {extra.name}
+                  </p>
+                  <p className="text-[11px] text-zinc-400 mt-0.5">
+                    {extra.ingredients.length} ingredient{extra.ingredients.length !== 1 ? 's' : ''}
+                    {qty > 0 && (
+                      <span className="ml-1.5 text-zinc-500 font-semibold">
+                        · {extra.ingredients.map((i) =>
+                          `${Math.round(i.amount * qty * 100) / 100} ${i.unit} ${i.name}`
+                        ).slice(0, 2).join(', ')}
+                        {extra.ingredients.length > 2 && ' …'}
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Right — qty stepper */}
+              <QtyStepper qty={qty} onChange={(q) => setWizardExtraQty(extra.id, q)} />
+            </div>
+          );
+        })}
       </div>
 
-      {/* Summary card */}
-      <div className="bg-zinc-900 text-white rounded-2xl p-5 flex justify-around text-center">
-        <div>
-          <div className="text-2xl font-black">{recipeDays}</div>
-          <div className="text-xs text-zinc-400 mt-0.5">Meals planned</div>
+      {/* Summary */}
+      {totalSelected > 0 && (
+        <div className="mt-5 flex items-center gap-2 px-4 py-3 bg-zinc-900 text-white rounded-2xl">
+          <ShoppingBag size={15} className="flex-shrink-0" />
+          <p className="text-sm font-semibold">
+            {selectedExtras.map((e) => {
+              const extra = extras.find((x) => x.id === e.id);
+              return extra ? `${e.qty}× ${extra.name}` : null;
+            }).filter(Boolean).join(' · ')}
+          </p>
         </div>
-        <div className="w-px bg-zinc-700" />
-        <div>
-          <div className="text-2xl font-black">{people}</div>
-          <div className="text-xs text-zinc-400 mt-0.5">Servings / meal</div>
-        </div>
-        <div className="w-px bg-zinc-700" />
-        <div>
-          <div className="text-2xl font-black">~{Math.round(estKcal / 1000)}k</div>
-          <div className="text-xs text-zinc-400 mt-0.5">Est. total kcal</div>
-        </div>
-      </div>
-
-      {freeDays > 0 && (
-        <p className="text-xs text-zinc-400 mt-3 text-center">
-          {freeDays} free day{freeDays > 1 ? 's' : ''} won&apos;t generate a recipe.
-          Calorie estimate uses ~500 kcal/meal average for uncapped days.
-        </p>
       )}
 
-      {/* ── Weekly extras ──────────────────────────────────────────────── */}
-      <div className="mt-8">
-        <div className="flex items-baseline justify-between mb-3">
-          <h3 className="text-sm font-bold text-zinc-800">Weekly extras</h3>
-          <span className="text-xs text-zinc-400">Added to your shopping list</span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {extras.map((extra) => {
-            const selected = selectedExtras.includes(extra.id);
-            return (
-              <button
-                key={extra.id}
-                type="button"
-                onClick={() => toggleWizardExtra(extra.id)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer
-                  ${selected
-                    ? 'bg-zinc-900 border-zinc-900 text-white'
-                    : 'border-zinc-200 text-zinc-600 bg-white hover:border-zinc-400'
-                  }`}
-              >
-                <span>{extra.emoji}</span>
-                {extra.name}
-              </button>
-            );
-          })}
-        </div>
-        {selectedExtras.length > 0 && (
-          <p className="text-xs text-zinc-400 mt-2.5">
-            {selectedExtras.length} extra{selectedExtras.length > 1 ? 's' : ''} selected — ingredients will be added to your shopping list.
-          </p>
-        )}
-      </div>
+      {totalSelected === 0 && (
+        <p className="mt-4 text-xs text-zinc-400 text-center">
+          Skip this step if you don&apos;t need extras — your shopping list will still include all recipe ingredients.
+        </p>
+      )}
     </div>
   );
 }
