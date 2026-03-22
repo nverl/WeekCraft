@@ -34,6 +34,8 @@ interface DayRowProps {
   dayPlan: DayPlan;
   dayIndex: number;
   isToday: boolean;
+  isExpanded: boolean;
+  onToggleExpanded: () => void;
   /** Week-level fallback headcount */
   people: number;
   recipes: Recipe[];
@@ -45,10 +47,14 @@ interface DayRowProps {
 }
 
 function DayRow({
-  dayPlan, dayIndex, isToday, people, recipes, usedIds,
+  dayPlan, dayIndex, isToday, isExpanded, onToggleExpanded, people, recipes, usedIds,
   onOpenRecipe, onMarkFree, onAssignRecipe, onSetPeople,
 }: DayRowProps) {
-  const [expanded, setExpanded] = useState(false);
+  const expanded = isExpanded;
+  const setExpanded = (val: boolean | ((prev: boolean) => boolean)) => {
+    const next = typeof val === 'function' ? val(expanded) : val;
+    if (next !== expanded) onToggleExpanded();
+  };
   // Single picker handles both "Swap recipe" (recipe days) and "Assign recipe" (free days)
   const [showPicker, setShowPicker] = useState(false);
 
@@ -222,6 +228,7 @@ export default function WeekDetailView({ weekPlan, recipes }: WeekDetailViewProp
   const { weeks, saveWeek, setActiveWeek, openWizardForWeek, toggleExtraForWeek } = useWeekPlanStore();
   const { extras, addExtra } = useExtrasStore();
   const [modalDayIndex, setModalDayIndex] = useState<number | null>(null);
+  const [expandedDayIndex, setExpandedDayIndex] = useState<number | null>(null);
   const [showExtrasPicker, setShowExtrasPicker] = useState(false);
 
   // Load this week's saved days into wizardStore so swapRecipe / markAsFreeDay operate on them
@@ -330,11 +337,13 @@ export default function WeekDetailView({ weekPlan, recipes }: WeekDetailViewProp
                 dayPlan={dayPlan}
                 dayIndex={i}
                 isToday={isToday}
+                isExpanded={expandedDayIndex === i}
+                onToggleExpanded={() => setExpandedDayIndex(expandedDayIndex === i ? null : i)}
                 people={people}
                 recipes={recipes}
                 usedIds={usedThisWeek}
                 onOpenRecipe={() => setModalDayIndex(i)}
-                onMarkFree={() => markAsFreeDay(i, '', null)}
+                onMarkFree={() => { markAsFreeDay(i, '', null); setExpandedDayIndex(null); }}
                 onAssignRecipe={(recipe, label) => assignRecipeToDay(i, recipe, label)}
                 onSetPeople={(n) => setDayPeople(i, n)}
               />

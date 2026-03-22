@@ -163,7 +163,10 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setView(item.id)}
+                  onClick={() => {
+                    if (item.id === 'calendar') setActiveWeek(null);
+                    setView(item.id);
+                  }}
                   className={`flex flex-col items-center gap-1 px-4 py-2 rounded-2xl transition-all cursor-pointer
                     ${isActive ? 'text-zinc-900' : 'text-zinc-400 hover:text-zinc-600'}`}
                 >
