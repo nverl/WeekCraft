@@ -297,9 +297,14 @@ export default function ShoppingList() {
             <p className="text-sm">Select at least one week above.</p>
           </div>
         ) : totalItems === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-zinc-400">
+          <div className="flex flex-col items-center justify-center h-48 text-zinc-400 text-center px-6">
             <ShoppingCart size={32} className="mb-3 opacity-40" />
-            <p className="text-sm">Your shopping list is empty.</p>
+            <p className="text-sm font-semibold text-zinc-600">Nothing left to buy!</p>
+            <p className="text-xs text-zinc-400 mt-1">
+              {checkedItems > 0
+                ? `All ${checkedItems} item${checkedItems !== 1 ? 's' : ''} are already in your pantry.`
+                : 'The selected weeks have no recipes with ingredients yet.'}
+            </p>
           </div>
         ) : (
           <div className="flex flex-col gap-3 max-w-lg mx-auto">

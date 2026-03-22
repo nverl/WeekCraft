@@ -10,23 +10,9 @@ import RecipeModal from './RecipeModal';
 import RecipePickerModal from './RecipePickerModal';
 import ExtraPickerModal from '@/app/components/extras/ExtraPickerModal';
 import type { Recipe, DayPlan, WeekPlan, DayLabel, Extra } from '@/app/types';
+import { LABEL_CONFIG, DEFAULT_LABEL } from '@/app/constants/labels';
 
 const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-// Left-border accent per label — full class strings so Tailwind scanner picks them up
-const LABEL_BORDER_COLOR: Record<string, string> = {
-  healthy:    'border-l-emerald-400',
-  'low-carb': 'border-l-sky-400',
-  cheat:      'border-l-orange-400',
-  none:       'border-l-zinc-200',
-};
-
-// Badge style per label
-const LABEL_BADGE: Record<string, { bg: string; text: string; short: string }> = {
-  healthy:    { bg: 'bg-emerald-100', text: 'text-emerald-700', short: 'Healthy'  },
-  'low-carb': { bg: 'bg-sky-100',     text: 'text-sky-700',     short: 'Low Carb' },
-  cheat:      { bg: 'bg-orange-100',  text: 'text-orange-700',  short: 'Cheat'    },
-};
 
 // ── DayRow ────────────────────────────────────────────────────────────────────
 
@@ -62,8 +48,9 @@ function DayRow({
   const effectivePeople = dayPlan.people ?? people;
 
   const isFree = dayPlan.label === 'none';
-  const borderColor = LABEL_BORDER_COLOR[dayPlan.label] ?? 'border-l-zinc-200';
-  const badge = !isFree ? (LABEL_BADGE[dayPlan.label] ?? null) : null;
+  const labelCfg = LABEL_CONFIG[dayPlan.label] ?? DEFAULT_LABEL;
+  const borderColor = labelCfg.border;
+  const badge = !isFree ? { bg: labelCfg.bg, text: labelCfg.color, short: labelCfg.text } : null;
 
   const date = new Date(dayPlan.date);
   const dateNum = date.getDate();

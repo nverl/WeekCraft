@@ -86,6 +86,24 @@ export default function SettingsPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const deleteInputRef = useRef<HTMLInputElement>(null);
 
+  // Warn before leaving with unsaved form data
+  useEffect(() => {
+    const hasUnsaved = () =>
+      newUsername !== currentUsername ||
+      currentPw !== '' ||
+      newPw !== '' ||
+      confirmPw !== '';
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsaved()) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [newUsername, currentUsername, currentPw, newPw, confirmPw]);
+
   // Load account info
   useEffect(() => {
     fetch('/api/account/me')

@@ -1,10 +1,28 @@
 'use client';
 
-import { useState } from 'react';
-import { X, Clock, Flame, Users, Leaf, Zap, ChefHat, ExternalLink, StickyNote, Dumbbell, Shuffle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Clock, Flame, Users, ChefHat, ExternalLink, StickyNote } from 'lucide-react';
 import { parseISODuration } from '@/app/store/wizardStore';
 import { useRecipeStore } from '@/app/store/recipeStore';
-import type { DayPlan, DayLabel } from '@/app/types';
+import { LABEL_CONFIG, DEFAULT_LABEL } from '@/app/constants/labels';
+import type { DayPlan } from '@/app/types';
+
+/** Format a numeric amount to a clean display string (avoids 0.3333…) */
+function fmtAmount(n: number): string {
+  if (Number.isInteger(n)) return String(n);
+  // Round to 2 decimal places and trim trailing zeros
+  return parseFloat(n.toFixed(2)).toString();
+}
+
+/** Returns true only for http/https URLs — blocks javascript:, data:, etc. */
+function isSafeUrl(url: string): boolean {
+  try {
+    const { protocol } = new URL(url);
+    return protocol === 'https:' || protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
 
 /** Extract YouTube video ID from various URL formats */
 function extractYoutubeId(url: string): string | null {
@@ -24,14 +42,6 @@ function extractYoutubeId(url: string): string | null {
   return null;
 }
 
-const LABEL_CONFIG: Record<string, { icon: React.ReactNode; color: string; bg: string; text: string }> = {
-  healthy:        { icon: <Leaf size={13} />,     color: 'text-emerald-700', bg: 'bg-emerald-100', text: 'Healthy'      },
-  'high-protein': { icon: <Dumbbell size={13} />, color: 'text-violet-700',  bg: 'bg-violet-100',  text: 'High Protein' },
-  'low-carb':     { icon: <Zap size={13} />,      color: 'text-sky-700',     bg: 'bg-sky-100',     text: 'Low Carb'     },
-  cheat:          { icon: <Flame size={13} />,    color: 'text-orange-700',  bg: 'bg-orange-100',  text: 'Cheat Day'    },
-  any:            { icon: <Shuffle size={13} />,  color: 'text-zinc-600',    bg: 'bg-zinc-100',    text: 'Any'          },
-};
-
 interface RecipeModalProps {
   dayPlan: DayPlan;
   people: number;
@@ -40,9 +50,19 @@ interface RecipeModalProps {
 
 export default function RecipeModal({ dayPlan, people, onClose }: RecipeModalProps) {
   const { recipe, scaledIngredients, label } = dayPlan;
-  const cfg = LABEL_CONFIG[label as DayLabel] ?? LABEL_CONFIG.healthy;
+  const cfg = LABEL_CONFIG[label] ?? DEFAULT_LABEL;
   const { recipeNotes, setRecipeNote } = useRecipeStore();
   const [noteVal, setNoteVal] = useState(() => (recipe ? (recipeNotes[recipe.id] ?? '') : ''));
+
+  // Debounce note saves — only write to store 800ms after user stops typing
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!recipe) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setRecipeNote(recipe.id, noteVal), 800);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [noteVal, recipe?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!recipe) return null;
 
   return (
@@ -121,13 +141,13 @@ export default function RecipeModal({ dayPlan, people, onClose }: RecipeModalPro
             ) : null;
           })()}
 
-          {/* Source URL */}
-          {recipe.sourceUrl && (
+          {/* Source URL — only rendered if protocol is http/https */}
+          {recipe.sourceUrl && isSafeUrl(recipe.sourceUrl) && (
             <div className="px-5 pt-3">
               <a
                 href={recipe.sourceUrl}
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="noopener noreferrer nofollow"
                 className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-zinc-900 transition-colors"
               >
                 <ExternalLink size={12} />
@@ -166,7 +186,7 @@ export default function RecipeModal({ dayPlan, people, onClose }: RecipeModalPro
                 <div key={i} className="flex items-center justify-between px-4 py-2.5">
                   <span className="text-sm text-zinc-700">{ing.name}</span>
                   <span className="text-sm font-semibold text-zinc-900 ml-4 text-right">
-                    {ing.amount} {ing.unit}
+                    {fmtAmount(Number(ing.amount))} {ing.unit}
                   </span>
                 </div>
               ))}
@@ -182,7 +202,6 @@ export default function RecipeModal({ dayPlan, people, onClose }: RecipeModalPro
             <textarea
               value={noteVal}
               onChange={(e) => setNoteVal(e.target.value)}
-              onBlur={() => setRecipeNote(recipe.id, noteVal)}
               placeholder="Add personal notes, tips, substitutions…"
               rows={3}
               className="w-full text-sm text-zinc-700 bg-zinc-50 border border-zinc-200 rounded-2xl px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-zinc-900 placeholder:text-zinc-300"

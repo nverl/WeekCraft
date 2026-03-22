@@ -145,17 +145,28 @@ export default function HomeView({ recipes, onShowAllWeeks }: HomeViewProps) {
   const isToday = activeDayIndex === todayDayIndex;
 
   // Extras — backward-compat: entries may be plain strings (old data) or {id,qty}
+  // Memoized so it only rebuilds when the week's extras actually change
   const rawExtras = weeks[todayWeekStart]?.selectedExtras ?? [];
-  const selectedExtrasMap = new Map<string, number>(
-    rawExtras.map((e) => typeof e === 'string' ? [e, 1] : [e.id, e.qty])
+  const selectedExtrasMap = useMemo(
+    () => new Map<string, number>(
+      rawExtras.map((e) => typeof e === 'string' ? [e, 1] : [e.id, e.qty])
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [JSON.stringify(rawExtras)],
   );
-  const selectedExtraIds = new Set(selectedExtrasMap.keys());
-  const weekExtras: (Extra & { qty: number })[] = extras
-    .filter((e) => selectedExtraIds.has(e.id))
-    .map((e) => ({ ...e, qty: selectedExtrasMap.get(e.id) ?? 1 }));
+  const selectedExtraIds = useMemo(() => new Set(selectedExtrasMap.keys()), [selectedExtrasMap]);
+  const weekExtras: (Extra & { qty: number })[] = useMemo(
+    () => extras
+      .filter((e) => selectedExtraIds.has(e.id))
+      .map((e) => ({ ...e, qty: selectedExtrasMap.get(e.id) ?? 1 })),
+    [extras, selectedExtraIds, selectedExtrasMap],
+  );
 
   // Used recipe IDs (for picker "already used" badge)
-  const usedIds = new Set(days.filter((d) => d.recipe).map((d) => d.recipe!.id));
+  const usedIds = useMemo(
+    () => new Set(days.filter((d) => d.recipe).map((d) => d.recipe!.id)),
+    [days],
+  );
 
   // Plan this week handler
   const handlePlanWeek = () => {

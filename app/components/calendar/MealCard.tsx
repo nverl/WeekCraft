@@ -1,18 +1,9 @@
 'use client';
 
-import { Clock, Flame, Shuffle, Leaf, Zap, ChevronRight } from 'lucide-react';
+import { Clock, Flame, ChevronRight, Shuffle } from 'lucide-react';
 import { parseISODuration } from '@/app/store/wizardStore';
-import type { DayPlan, DayLabel } from '@/app/types';
-
-import { Dumbbell } from 'lucide-react';
-
-const LABEL_CONFIG: Record<string, { icon: React.ReactNode; color: string; bg: string; border: string; text: string }> = {
-  healthy:        { icon: <Leaf size={13} />,     color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'Healthy'      },
-  'high-protein': { icon: <Dumbbell size={13} />, color: 'text-violet-700',  bg: 'bg-violet-50',  border: 'border-violet-200',  text: 'High Protein' },
-  'low-carb':     { icon: <Zap size={13} />,      color: 'text-sky-700',     bg: 'bg-sky-50',     border: 'border-sky-200',     text: 'Low Carb'     },
-  cheat:          { icon: <Flame size={13} />,    color: 'text-orange-700',  bg: 'bg-orange-50',  border: 'border-orange-200',  text: 'Cheat Day'    },
-  any:            { icon: <Shuffle size={13} />,  color: 'text-zinc-600',    bg: 'bg-zinc-50',    border: 'border-zinc-200',    text: 'Any'          },
-};
+import { LABEL_CONFIG, DEFAULT_LABEL } from '@/app/constants/labels';
+import type { DayPlan } from '@/app/types';
 
 interface MealCardProps {
   dayPlan: DayPlan;
@@ -27,7 +18,7 @@ export default function MealCard({ dayPlan, onSwap, onOpen, onMarkFree }: MealCa
   // Guard: should not be rendered for none/free days, but be defensive
   if (!recipe || label === 'none') return null;
 
-  const cfg = LABEL_CONFIG[label as DayLabel];
+  const cfg = LABEL_CONFIG[label] ?? DEFAULT_LABEL;
 
   return (
     <div

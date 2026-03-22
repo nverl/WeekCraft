@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { isStrongPassword } from '@/lib/validate';
 
 // PATCH /api/account — change username or password
 export async function PATCH(req: Request) {
@@ -44,9 +46,16 @@ export async function PATCH(req: Request) {
     if (!currentPassword || !newPassword) {
       return NextResponse.json({ error: 'All fields required' }, { status: 400 });
     }
-    if (newPassword.length < 6) {
-      return NextResponse.json({ error: 'New password must be at least 6 characters' }, { status: 400 });
+    const pwCheck = isStrongPassword(newPassword);
+    if (!pwCheck.ok) {
+      return NextResponse.json({ error: pwCheck.message }, { status: 400 });
     }
+
+    // Rate limit password change: 5 attempts per 15 min per user
+    if (!checkRateLimit(`pw-change:${session.user.id}`, 5, 15 * 60 * 1000)) {
+      return NextResponse.json({ error: 'Too many attempts. Please try again later.' }, { status: 429 });
+    }
+
     const user = await prisma.user.findUnique({ where: { id: session.user.id } });
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
