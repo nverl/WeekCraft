@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Minus, Plus, ShoppingBag } from 'lucide-react';
 import { useWizardStore } from '@/app/store/wizardStore';
 import { useExtrasStore } from '@/app/store/extrasStore';
@@ -44,6 +45,7 @@ function QtyStepper({ qty, onChange, min = 0, max = 20 }: QtyStepperProps) {
 export default function Step2WeeklyExtras() {
   const { selectedExtras, setWizardExtraQty } = useWizardStore();
   const { extras } = useExtrasStore();
+  const [openIngId, setOpenIngId] = useState<string | null>(null);
 
   const totalSelected = selectedExtras.length;
 
@@ -62,38 +64,72 @@ export default function Step2WeeklyExtras() {
           const qty = getQty(extra.id);
           const selected = qty > 0;
 
+          const isIngOpen = openIngId === extra.id;
+
           return (
             <div
               key={extra.id}
-              className={`flex items-center justify-between gap-4 p-4 rounded-2xl border transition-all
+              className={`group rounded-2xl border transition-all
                 ${selected
                   ? 'border-zinc-300 bg-white shadow-sm'
                   : 'border-zinc-100 bg-zinc-50'
                 }`}
             >
-              {/* Left — extra info */}
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <span className="text-2xl flex-shrink-0">{extra.emoji}</span>
-                <div className="min-w-0">
-                  <p className={`text-sm font-bold leading-tight truncate ${selected ? 'text-zinc-900' : 'text-zinc-500'}`}>
-                    {extra.name}
-                  </p>
-                  <p className="text-[11px] text-zinc-400 mt-0.5">
-                    {extra.ingredients.length} ingredient{extra.ingredients.length !== 1 ? 's' : ''}
-                    {qty > 0 && (
-                      <span className="ml-1.5 text-zinc-500 font-semibold">
-                        · {extra.ingredients.map((i) =>
-                          `${Math.round(i.amount * qty * 100) / 100} ${i.unit} ${i.name}`
-                        ).slice(0, 2).join(', ')}
-                        {extra.ingredients.length > 2 && ' …'}
-                      </span>
+              {/* Main row */}
+              <div className="flex items-center justify-between gap-4 p-4">
+                {/* Left — extra info */}
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <span className="text-2xl flex-shrink-0">{extra.emoji}</span>
+                  <div className="min-w-0">
+                    <p className={`text-sm font-bold leading-tight truncate ${selected ? 'text-zinc-900' : 'text-zinc-500'}`}>
+                      {extra.name}
+                    </p>
+                    {/* Ingredient preview — tap/hover to expand */}
+                    {extra.ingredients.length > 0 && (
+                      <button
+                        onClick={() => setOpenIngId(isIngOpen ? null : extra.id)}
+                        className="text-left mt-0.5"
+                      >
+                        <p className="text-[11px] text-zinc-400 group-hover:text-zinc-500 transition-colors">
+                          {extra.ingredients.slice(0, 2).map((i) => i.name).join(', ')}
+                          {extra.ingredients.length > 2 && ` +${extra.ingredients.length - 2} more`}
+                        </p>
+                      </button>
                     )}
-                  </p>
+                  </div>
                 </div>
+
+                {/* Right — qty stepper */}
+                <QtyStepper qty={qty} onChange={(q) => setWizardExtraQty(extra.id, q)} />
               </div>
 
-              {/* Right — qty stepper */}
-              <QtyStepper qty={qty} onChange={(q) => setWizardExtraQty(extra.id, q)} />
+              {/* Full ingredient list — shown on hover (desktop) or tap (mobile) */}
+              {extra.ingredients.length > 0 && (
+                <div
+                  className={`px-4 pb-3 flex-col gap-1
+                    ${isIngOpen ? 'flex' : 'hidden group-hover:flex'}`}
+                >
+                  <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">
+                    Ingredients {qty > 0 ? `(×${qty})` : ''}
+                  </p>
+                  {extra.ingredients.map((ing) => {
+                    const scaled = qty > 0
+                      ? Math.round(ing.amount * qty * 100) / 100
+                      : ing.amount;
+                    return (
+                      <div key={ing.name} className="flex items-baseline gap-2 text-[12px]">
+                        <span className="font-semibold text-zinc-600 w-16 text-right flex-shrink-0">
+                          {scaled} {ing.unit}
+                        </span>
+                        <span className="text-zinc-500">{ing.name}</span>
+                      </div>
+                    );
+                  })}
+                  {qty === 0 && (
+                    <p className="text-[10px] text-zinc-300 italic mt-0.5">Set a quantity to see scaled amounts</p>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}

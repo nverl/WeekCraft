@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Search, Plus, Check } from 'lucide-react';
+import { X, Search, Plus, Check, ChevronDown } from 'lucide-react';
 import type { Extra, ExtraCategory } from '@/app/types';
 
 // ── Category filter tabs ──────────────────────────────────────────────────────
@@ -41,6 +41,7 @@ export default function ExtraPickerModal({
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<ExtraCategory | 'all'>('all');
   const [showCreate, setShowCreate] = useState(false);
+  const [openIngId, setOpenIngId] = useState<string | null>(null);
 
   // Create-form state
   const [newEmoji, setNewEmoji]       = useState('🍴');
@@ -119,45 +120,80 @@ export default function ExtraPickerModal({
 
           {filtered.map((extra) => {
             const selected = selectedIds.has(extra.id);
-            const ingredientNames = extra.ingredients.slice(0, 3).map((i) => i.name);
-            const preview = ingredientNames.join(', ') + (extra.ingredients.length > 3 ? '…' : '');
+            const isIngOpen = openIngId === extra.id;
 
             return (
-              <button
+              <div
                 key={extra.id}
-                onClick={() => onToggle(extra)}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-left transition-colors cursor-pointer
+                className={`group rounded-2xl transition-colors
                   ${selected ? 'bg-zinc-50' : 'hover:bg-zinc-50'}`}
               >
-                {/* Emoji */}
-                <span className="text-2xl flex-shrink-0 w-9 text-center">{extra.emoji}</span>
+                {/* Main row */}
+                <div className="flex items-center gap-3 px-3 py-3">
+                  {/* Emoji */}
+                  <span className="text-2xl flex-shrink-0 w-9 text-center">{extra.emoji}</span>
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-zinc-900">{extra.name}</span>
-                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${CAT_COLOR[extra.category]}`}>
-                      {extra.category.charAt(0).toUpperCase() + extra.category.slice(1)}
-                    </span>
+                  {/* Info — click to select */}
+                  <button
+                    onClick={() => onToggle(extra)}
+                    className="flex-1 min-w-0 text-left"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-zinc-900">{extra.name}</span>
+                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${CAT_COLOR[extra.category]}`}>
+                        {extra.category.charAt(0).toUpperCase() + extra.category.slice(1)}
+                      </span>
+                    </div>
+                    {extra.ingredients.length > 0 && (
+                      <p className="text-xs text-zinc-400 mt-0.5 truncate group-hover:text-zinc-500 transition-colors">
+                        {extra.ingredients.slice(0, 3).map((i) => i.name).join(', ')}
+                        {extra.ingredients.length > 3 && ` +${extra.ingredients.length - 3}`}
+                      </p>
+                    )}
+                    {extra.ingredients.length === 0 && (
+                      <p className="text-xs text-zinc-300 mt-0.5 italic">No shopping items</p>
+                    )}
+                  </button>
+
+                  {/* Expand ingredients button */}
+                  {extra.ingredients.length > 0 && (
+                    <button
+                      onClick={() => setOpenIngId(isIngOpen ? null : extra.id)}
+                      className="flex-shrink-0 p-1 rounded-lg text-zinc-300 hover:text-zinc-500 hover:bg-zinc-100 cursor-pointer transition-all"
+                      aria-label="Show ingredients"
+                    >
+                      <ChevronDown size={13} className={`transition-transform ${isIngOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                  )}
+
+                  {/* Checkbox */}
+                  <button
+                    onClick={() => onToggle(extra)}
+                    className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer
+                      ${selected ? 'bg-zinc-900 border-zinc-900' : 'border-zinc-300'}`}
+                    aria-label={selected ? `Remove ${extra.name}` : `Add ${extra.name}`}
+                  >
+                    {selected && <Check size={10} strokeWidth={3} className="text-white" />}
+                  </button>
+                </div>
+
+                {/* Full ingredient list — shown on hover (desktop) or expand tap (mobile) */}
+                {extra.ingredients.length > 0 && (
+                  <div
+                    className={`px-12 pb-3 flex-col gap-1
+                      ${isIngOpen ? 'flex' : 'hidden group-hover:flex'}`}
+                  >
+                    {extra.ingredients.map((ing) => (
+                      <div key={ing.name} className="flex items-baseline gap-2 text-[11px]">
+                        <span className="font-semibold text-zinc-500 w-14 text-right flex-shrink-0">
+                          {ing.amount} {ing.unit}
+                        </span>
+                        <span className="text-zinc-400">{ing.name}</span>
+                      </div>
+                    ))}
                   </div>
-                  {preview && (
-                    <p className="text-xs text-zinc-400 mt-0.5 truncate">{preview}</p>
-                  )}
-                  {extra.ingredients.length === 0 && (
-                    <p className="text-xs text-zinc-300 mt-0.5 italic">No shopping items</p>
-                  )}
-                </div>
-
-                {/* Checkbox */}
-                <div className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all
-                  ${selected
-                    ? 'bg-zinc-900 border-zinc-900'
-                    : 'border-zinc-300'
-                  }`}
-                >
-                  {selected && <Check size={10} strokeWidth={3} className="text-white" />}
-                </div>
-              </button>
+                )}
+              </div>
             );
           })}
 

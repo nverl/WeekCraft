@@ -8,7 +8,7 @@ interface StepIndicatorProps {
 
 const steps = [
   { number: 1, label: 'Daily Vibe' },
-  { number: 2, label: 'Household' },
+  { number: 2, label: 'Extras' },
   { number: 3, label: 'Confirm' },
 ];
 

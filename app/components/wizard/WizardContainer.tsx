@@ -41,7 +41,7 @@ export default function WizardContainer({ recipes, onComplete, onCancel }: Wizar
 
   const nextLabel =
     currentStep === 1
-      ? 'Next: Household'
+      ? 'Next: Extras'
       : currentStep === 2
       ? 'Generate Plan'
       : 'Save plan';

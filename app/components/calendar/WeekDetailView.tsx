@@ -225,11 +225,12 @@ interface WeekDetailViewProps {
 
 export default function WeekDetailView({ weekPlan, recipes }: WeekDetailViewProps) {
   const { plan, people, setPlan, markAsFreeDay, assignRecipeToDay, setDayPeople } = useWizardStore();
-  const { weeks, saveWeek, setActiveWeek, openWizardForWeek, toggleExtraForWeek } = useWeekPlanStore();
+  const { weeks, saveWeek, setActiveWeek, openWizardForWeek, toggleExtraForWeek, setExtraQtyForWeek } = useWeekPlanStore();
   const { extras, addExtra } = useExtrasStore();
   const [modalDayIndex, setModalDayIndex] = useState<number | null>(null);
   const [expandedDayIndex, setExpandedDayIndex] = useState<number | null>(null);
   const [showExtrasPicker, setShowExtrasPicker] = useState(false);
+  const [openIngId, setOpenIngId] = useState<string | null>(null);
 
   // Load this week's saved days into wizardStore so swapRecipe / markAsFreeDay operate on them
   useEffect(() => {
@@ -260,7 +261,10 @@ export default function WeekDetailView({ weekPlan, recipes }: WeekDetailViewProp
 
   // Extras for this week — backward-compat: entries may be strings or {id,qty}
   const rawExtras = weeks[weekPlan.weekStart]?.selectedExtras ?? [];
-  const selectedExtraIds = new Set(rawExtras.map((e) => typeof e === 'string' ? e : e.id));
+  const normExtras: { id: string; qty: number }[] = rawExtras.map((e) =>
+    typeof e === 'string' ? { id: e, qty: 1 } : e
+  );
+  const selectedExtraIds = new Set(normExtras.map((e) => e.id));
   const weekExtras: Extra[] = extras.filter((e) => selectedExtraIds.has(e.id));
 
   // Derive modal plan from index (stays fresh after swaps)
@@ -355,26 +359,87 @@ export default function WeekDetailView({ weekPlan, recipes }: WeekDetailViewProp
             <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2.5">
               Extras this week
             </p>
-            <div className="flex flex-wrap gap-2">
-              {weekExtras.map((extra) => (
-                <span
-                  key={extra.id}
-                  className="flex items-center gap-1.5 bg-zinc-100 rounded-full pl-2.5 pr-1.5 py-1.5 text-xs font-semibold text-zinc-700"
-                >
-                  <span>{extra.emoji}</span>
-                  {extra.name}
-                  <button
-                    onClick={() => toggleExtraForWeek(weekPlan.weekStart, extra.id)}
-                    className="w-4 h-4 flex items-center justify-center rounded-full bg-zinc-200 hover:bg-zinc-300 text-zinc-500 hover:text-zinc-700 cursor-pointer transition-colors"
-                    aria-label={`Remove ${extra.name}`}
-                  >
-                    <X size={9} />
-                  </button>
-                </span>
-              ))}
+            <div className="flex flex-col gap-1">
+              {weekExtras.map((extra) => {
+                const qty = normExtras.find((e) => e.id === extra.id)?.qty ?? 1;
+                const isOpen = openIngId === extra.id;
+
+                return (
+                  <div key={extra.id} className="group">
+                    <div className="flex items-center gap-2 py-1.5 px-1 rounded-xl hover:bg-zinc-50 transition-colors">
+                      {/* Emoji + name — tap to toggle ingredient detail */}
+                      <button
+                        onClick={() => setOpenIngId(isOpen ? null : extra.id)}
+                        className="flex items-center gap-2 flex-1 min-w-0 text-left"
+                        aria-label={`Toggle ingredients for ${extra.name}`}
+                      >
+                        <span className="text-base flex-shrink-0">{extra.emoji}</span>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-zinc-800 leading-tight">{extra.name}</p>
+                          {extra.ingredients.length > 0 && (
+                            <p className="text-[10px] text-zinc-400 leading-tight">
+                              {extra.ingredients.slice(0, 2).map((i) => i.name).join(', ')}
+                              {extra.ingredients.length > 2 && ` +${extra.ingredients.length - 2}`}
+                            </p>
+                          )}
+                        </div>
+                      </button>
+
+                      {/* Qty stepper */}
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          onClick={() => setExtraQtyForWeek(weekPlan.weekStart, extra.id, qty - 1)}
+                          className="w-5 h-5 rounded-full bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center cursor-pointer transition-colors"
+                          aria-label="Decrease quantity"
+                        >
+                          <Minus size={9} />
+                        </button>
+                        <span className="w-5 text-center text-xs font-black text-zinc-800">{qty}</span>
+                        <button
+                          onClick={() => setExtraQtyForWeek(weekPlan.weekStart, extra.id, qty + 1)}
+                          className="w-5 h-5 rounded-full bg-zinc-100 hover:bg-zinc-200 flex items-center justify-center cursor-pointer transition-colors"
+                          aria-label="Increase quantity"
+                        >
+                          <Plus size={9} />
+                        </button>
+                      </div>
+
+                      {/* Remove */}
+                      <button
+                        onClick={() => setExtraQtyForWeek(weekPlan.weekStart, extra.id, 0)}
+                        className="w-5 h-5 flex items-center justify-center text-zinc-300 hover:text-zinc-500 cursor-pointer transition-colors flex-shrink-0"
+                        aria-label={`Remove ${extra.name}`}
+                      >
+                        <X size={11} />
+                      </button>
+                    </div>
+
+                    {/* Full ingredient list — CSS hover (desktop) or tap (mobile) */}
+                    {extra.ingredients.length > 0 && (
+                      <div
+                        className={`pl-9 pr-2 pb-2 flex-col gap-0.5
+                          ${isOpen ? 'flex' : 'hidden group-hover:flex'}`}
+                      >
+                        {extra.ingredients.map((ing) => {
+                          const scaled = Math.round(ing.amount * qty * 100) / 100;
+                          return (
+                            <div key={ing.name} className="flex items-baseline gap-1.5 text-[11px]">
+                              <span className="font-semibold text-zinc-600 w-16 text-right flex-shrink-0">
+                                {scaled} {ing.unit}
+                              </span>
+                              <span className="text-zinc-400">{ing.name}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
               <button
                 onClick={() => setShowExtrasPicker(true)}
-                className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-dashed transition-colors cursor-pointer
+                className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-dashed transition-colors cursor-pointer mt-1
                   ${weekExtras.length === 0
                     ? 'border-zinc-300 text-zinc-400 hover:border-zinc-500 hover:text-zinc-600'
                     : 'border-zinc-200 text-zinc-400 hover:border-zinc-400 hover:text-zinc-600'

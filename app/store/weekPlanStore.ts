@@ -21,6 +21,7 @@ interface WeekPlanStore {
   toggleWeekForShopping: (weekStart: string) => void;
   setAllWeeksForShopping: (weekStarts: string[]) => void;
   toggleExtraForWeek: (weekStart: string, extraId: string) => void;
+  setExtraQtyForWeek: (weekStart: string, extraId: string, qty: number) => void;
 }
 
 export const useWeekPlanStore = create<WeekPlanStore>()(
@@ -87,6 +88,32 @@ export const useWeekPlanStore = create<WeekPlanStore>()(
           const next = exists
             ? current.filter((e) => e.id !== extraId)        // remove
             : [...current, { id: extraId, qty: 1 }];         // add with qty 1
+          const updated = { ...week, selectedExtras: next };
+          fetch('/api/plans', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updated),
+          }).catch(console.error);
+          return { weeks: { ...state.weeks, [weekStart]: updated } };
+        });
+      },
+
+      setExtraQtyForWeek: (weekStart, extraId, qty) => {
+        set((state) => {
+          const week = state.weeks[weekStart];
+          if (!week) return state;
+          const current: SelectedExtra[] = (week.selectedExtras ?? []).map((e) =>
+            typeof e === 'string' ? { id: e, qty: 1 } : e
+          );
+          let next: SelectedExtra[];
+          if (qty <= 0) {
+            next = current.filter((e) => e.id !== extraId);
+          } else {
+            const exists = current.find((e) => e.id === extraId);
+            next = exists
+              ? current.map((e) => e.id === extraId ? { ...e, qty } : e)
+              : [...current, { id: extraId, qty }];
+          }
           const updated = { ...week, selectedExtras: next };
           fetch('/api/plans', {
             method: 'PUT',
