@@ -145,7 +145,7 @@ export default function ExtraPickerModal({
                       </span>
                     </div>
                     {extra.ingredients.length > 0 && (
-                      <p className="text-xs text-zinc-400 mt-0.5 truncate group-hover:text-zinc-500 transition-colors">
+                      <p className="text-xs text-zinc-400 mt-0.5 truncate">
                         {extra.ingredients.slice(0, 3).map((i) => i.name).join(', ')}
                         {extra.ingredients.length > 3 && ` +${extra.ingredients.length - 3}`}
                       </p>
@@ -177,11 +177,11 @@ export default function ExtraPickerModal({
                   </button>
                 </div>
 
-                {/* Full ingredient list — shown on hover (desktop) or expand tap (mobile) */}
+                {/* Full ingredient list — shown only when expanded */}
                 {extra.ingredients.length > 0 && (
                   <div
                     className={`px-12 pb-3 flex-col gap-1
-                      ${isIngOpen ? 'flex' : 'hidden group-hover:flex'}`}
+                      ${isIngOpen ? 'flex' : 'hidden'}`}
                   >
                     {extra.ingredients.map((ing) => (
                       <div key={ing.name} className="flex items-baseline gap-2 text-[11px]">

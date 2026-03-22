@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Leaf, Zap, Flame, Coffee, Clock, ChevronDown, ChevronUp, Dumbbell, Shuffle } from 'lucide-react';
+import { Leaf, Zap, Flame, Coffee, Clock, ChevronDown, ChevronUp, Dumbbell, Shuffle, Minus, Plus, Users } from 'lucide-react';
 import { useWizardStore } from '@/app/store/wizardStore';
 import type { DayConfig } from '@/app/types';
 
@@ -247,6 +247,44 @@ function DayRow({ dayIndex, config, isOpen, onToggle, onChange }: DayRowProps) {
                   min={0}
                   className="w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm text-zinc-800 bg-white focus:outline-none focus:border-zinc-400"
                 />
+              </div>
+            </div>
+          )}
+
+          {/* Per-day people override (recipe days only) */}
+          {config.label !== 'none' && (
+            <div className="flex items-center justify-between bg-white border border-zinc-200 rounded-2xl px-4 py-3">
+              <div className="flex items-center gap-2 text-sm font-semibold text-zinc-700">
+                <Users size={14} className="text-zinc-400" />
+                <span>People this day</span>
+                {config.people === undefined && (
+                  <span className="text-[10px] font-medium text-zinc-400">(using default)</span>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => onChange({ people: Math.max(1, (config.people ?? 2) - 1) })}
+                  className="w-7 h-7 rounded-full border border-zinc-300 flex items-center justify-center text-zinc-600 hover:border-zinc-900 hover:text-zinc-900 transition-all cursor-pointer"
+                >
+                  <Minus size={12} />
+                </button>
+                <span className="w-6 text-center text-sm font-black text-zinc-900">
+                  {config.people ?? 2}
+                </span>
+                <button
+                  onClick={() => onChange({ people: Math.min(12, (config.people ?? 2) + 1) })}
+                  className="w-7 h-7 rounded-full border border-zinc-300 flex items-center justify-center text-zinc-600 hover:border-zinc-900 hover:text-zinc-900 transition-all cursor-pointer"
+                >
+                  <Plus size={12} />
+                </button>
+                {config.people !== undefined && (
+                  <button
+                    onClick={() => onChange({ people: undefined })}
+                    className="text-[10px] font-medium text-zinc-400 hover:text-zinc-600 underline cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                )}
               </div>
             </div>
           )}

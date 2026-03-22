@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ChevronLeft, RefreshCw, Coffee, ArrowLeftRight, ChefHat, Clock, Flame, Users, Plus, Minus, X } from 'lucide-react';
+import { ChevronLeft, ChevronDown, RefreshCw, Coffee, ArrowLeftRight, ChefHat, Clock, Flame, Users, Plus, Minus, X } from 'lucide-react';
 import { useWizardStore, parseISODuration } from '@/app/store/wizardStore';
 import { useWeekPlanStore } from '@/app/store/weekPlanStore';
 import { useExtrasStore } from '@/app/store/extrasStore';
@@ -377,10 +377,16 @@ export default function WeekDetailView({ weekPlan, recipes }: WeekDetailViewProp
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-zinc-800 leading-tight">{extra.name}</p>
                           {extra.ingredients.length > 0 && (
-                            <p className="text-[10px] text-zinc-400 leading-tight">
-                              {extra.ingredients.slice(0, 2).map((i) => i.name).join(', ')}
-                              {extra.ingredients.length > 2 && ` +${extra.ingredients.length - 2}`}
-                            </p>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <p className="text-[10px] text-zinc-400 leading-tight">
+                                {extra.ingredients.slice(0, 2).map((i) => i.name).join(', ')}
+                                {extra.ingredients.length > 2 && ` +${extra.ingredients.length - 2}`}
+                              </p>
+                              <ChevronDown
+                                size={10}
+                                className={`text-zinc-300 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                              />
+                            </div>
                           )}
                         </div>
                       </button>
@@ -414,11 +420,11 @@ export default function WeekDetailView({ weekPlan, recipes }: WeekDetailViewProp
                       </button>
                     </div>
 
-                    {/* Full ingredient list — CSS hover (desktop) or tap (mobile) */}
+                    {/* Full ingredient list — shown only when tapped */}
                     {extra.ingredients.length > 0 && (
                       <div
                         className={`pl-9 pr-2 pb-2 flex-col gap-0.5
-                          ${isOpen ? 'flex' : 'hidden group-hover:flex'}`}
+                          ${isOpen ? 'flex' : 'hidden'}`}
                       >
                         {extra.ingredients.map((ing) => {
                           const scaled = Math.round(ing.amount * qty * 100) / 100;

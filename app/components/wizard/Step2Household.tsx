@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Minus, Plus, ShoppingBag } from 'lucide-react';
+import { Minus, Plus, ShoppingBag, ChevronDown } from 'lucide-react';
 import { useWizardStore } from '@/app/store/wizardStore';
 import { useExtrasStore } from '@/app/store/extrasStore';
 
@@ -84,16 +84,20 @@ export default function Step2WeeklyExtras() {
                     <p className={`text-sm font-bold leading-tight truncate ${selected ? 'text-zinc-900' : 'text-zinc-500'}`}>
                       {extra.name}
                     </p>
-                    {/* Ingredient preview — tap/hover to expand */}
+                    {/* Ingredient preview — tap to expand */}
                     {extra.ingredients.length > 0 && (
                       <button
                         onClick={() => setOpenIngId(isIngOpen ? null : extra.id)}
-                        className="text-left mt-0.5"
+                        className="flex items-center gap-1 text-left mt-0.5"
                       >
-                        <p className="text-[11px] text-zinc-400 group-hover:text-zinc-500 transition-colors">
+                        <p className="text-[11px] text-zinc-400">
                           {extra.ingredients.slice(0, 2).map((i) => i.name).join(', ')}
-                          {extra.ingredients.length > 2 && ` +${extra.ingredients.length - 2} more`}
+                          {extra.ingredients.length > 2 && ` +${extra.ingredients.length - 2}`}
                         </p>
+                        <ChevronDown
+                          size={11}
+                          className={`text-zinc-300 flex-shrink-0 transition-transform ${isIngOpen ? 'rotate-180' : ''}`}
+                        />
                       </button>
                     )}
                   </div>
@@ -103,11 +107,11 @@ export default function Step2WeeklyExtras() {
                 <QtyStepper qty={qty} onChange={(q) => setWizardExtraQty(extra.id, q)} />
               </div>
 
-              {/* Full ingredient list — shown on hover (desktop) or tap (mobile) */}
+              {/* Full ingredient list — shown only when tapped */}
               {extra.ingredients.length > 0 && (
                 <div
                   className={`px-4 pb-3 flex-col gap-1
-                    ${isIngOpen ? 'flex' : 'hidden group-hover:flex'}`}
+                    ${isIngOpen ? 'flex' : 'hidden'}`}
                 >
                   <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">
                     Ingredients {qty > 0 ? `(×${qty})` : ''}
