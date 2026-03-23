@@ -15,12 +15,49 @@ model User {
   defaultPeople Int      @default(2)
   createdAt     DateTime @default(now())
 
-  recipes     UserRecipe[]
-  extras      UserExtra[]
-  ingredients UserIngredient[]
-  weekPlans   WeekPlan[]
-  favourites  RecipeFavourite[]
-  notes       RecipeNote[]
+  recipes          UserRecipe[]
+  extras           UserExtra[]
+  ingredients      UserIngredient[]
+  weekPlans        WeekPlan[]
+  favourites       RecipeFavourite[]
+  notes            RecipeNote[]
+  ownedHousehold   Household?        @relation("HouseholdOwner")
+  householdMember  HouseholdMember?
+  sentInvites      HouseholdInvite[] @relation("InviteSender")
+}
+
+model Household {
+  id        String   @id @default(cuid())
+  name      String   @default("My Household")
+  ownerId   String   @unique
+  owner     User     @relation("HouseholdOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members   HouseholdMember[]
+  invites   HouseholdInvite[]
+  weekPlans WeekPlan[]
+  createdAt DateTime @default(now())
+}
+
+model HouseholdMember {
+  householdId String
+  userId      String    @unique
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt    DateTime  @default(now())
+
+  @@id([householdId, userId])
+}
+
+model HouseholdInvite {
+  id          String    @id @default(cuid())
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  invitedById String
+  invitedBy   User      @relation("InviteSender", fields: [invitedById], references: [id], onDelete: Cascade)
+  token       String    @unique @default(cuid())
+  note        String?
+  acceptedAt  DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
 }
 
 model UserRecipe {
@@ -64,15 +101,18 @@ model UserIngredient {
 }
 
 model WeekPlan {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  weekStart String
-  data      Json
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String     @id @default(cuid())
+  userId      String?
+  user        User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  householdId String?
+  household   Household? @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  weekStart   String
+  data        Json
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   @@unique([userId, weekStart])
+  @@unique([householdId, weekStart])
 }
 
 model RecipeFavourite {

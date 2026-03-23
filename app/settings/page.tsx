@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import {
   ChevronLeft, User, Lock, Trash2,
   Check, AlertCircle, Eye, EyeOff, LogOut, Users, Minus, Plus,
+  Link2, Copy, UserPlus, UserMinus, Crown, Home,
 } from 'lucide-react';
 
 // ── Reusable feedback pill ────────────────────────────────────────────────────
@@ -86,6 +87,24 @@ export default function SettingsPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const deleteInputRef = useRef<HTMLInputElement>(null);
 
+  // Household
+  interface HouseholdMemberInfo { userId: string; username: string; joinedAt: string }
+  interface PendingInvite { id: string; token: string; note: string | null; expiresAt: string; inviteUrl: string }
+  interface HouseholdInfo {
+    id: string; name: string; role: 'owner' | 'member';
+    ownerUsername?: string;
+    members: HouseholdMemberInfo[];
+    pendingInvites: PendingInvite[];
+  }
+  const [household, setHousehold] = useState<HouseholdInfo | null | 'loading'>('loading');
+  const [householdFeedback, setHouseholdFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [householdName, setHouseholdName] = useState('');
+  const [newHouseholdName, setNewHouseholdName] = useState('');
+  const [creatingHousehold, setCreatingHousehold] = useState(false);
+  const [generatingInvite, setGeneratingInvite] = useState(false);
+  const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [inviteNote, setInviteNote] = useState('');
+
   // Warn before leaving with unsaved form data
   useEffect(() => {
     const hasUnsaved = () =>
@@ -123,6 +142,92 @@ export default function SettingsPage() {
   useEffect(() => {
     if (deleteOpen) setTimeout(() => deleteInputRef.current?.focus(), 50);
   }, [deleteOpen]);
+
+  // Load household
+  useEffect(() => {
+    fetch('/api/household')
+      .then((r) => r.json())
+      .then((d) => {
+        setHousehold(d);
+        if (d) setHouseholdName(d.name);
+      })
+      .catch(() => setHousehold(null));
+  }, []);
+
+  async function handleCreateHousehold() {
+    if (!newHouseholdName.trim()) return;
+    setCreatingHousehold(true);
+    setHouseholdFeedback(null);
+    const res = await fetch('/api/household', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newHouseholdName.trim() }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setHousehold({ id: data.id, name: data.name, role: 'owner', members: [], pendingInvites: [] });
+      setHouseholdName(data.name);
+      setNewHouseholdName('');
+    } else {
+      setHouseholdFeedback({ type: 'error', msg: data.error ?? 'Failed to create household' });
+    }
+    setCreatingHousehold(false);
+  }
+
+  async function handleGenerateInvite() {
+    setGeneratingInvite(true);
+    setHouseholdFeedback(null);
+    const res = await fetch('/api/household/invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note: inviteNote.trim() || null }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      const fullUrl = `${window.location.origin}${data.inviteUrl}`;
+      await navigator.clipboard.writeText(fullUrl).catch(() => {});
+      setCopiedToken(data.token);
+      setHousehold((prev) => {
+        if (!prev || prev === 'loading') return prev;
+        return {
+          ...prev,
+          pendingInvites: [
+            ...prev.pendingInvites,
+            { id: data.token, token: data.token, note: inviteNote.trim() || null, expiresAt: data.expiresAt, inviteUrl: data.inviteUrl },
+          ],
+        };
+      });
+      setInviteNote('');
+      setTimeout(() => setCopiedToken(null), 3000);
+    } else {
+      setHouseholdFeedback({ type: 'error', msg: data.error ?? 'Failed to generate invite' });
+    }
+    setGeneratingInvite(false);
+  }
+
+  async function handleRevokeInvite(token: string) {
+    await fetch(`/api/household/invite/${token}`, { method: 'DELETE' });
+    setHousehold((prev) => {
+      if (!prev || prev === 'loading') return prev;
+      return { ...prev, pendingInvites: prev.pendingInvites.filter((i) => i.token !== token) };
+    });
+  }
+
+  async function handleRemoveMember(userId: string) {
+    const res = await fetch(`/api/household/member/${userId}`, { method: 'DELETE' });
+    if (res.ok) {
+      setHousehold((prev) => {
+        if (!prev || prev === 'loading') return prev;
+        return { ...prev, members: prev.members.filter((m) => m.userId !== userId) };
+      });
+    }
+  }
+
+  async function handleLeaveOrDissolve() {
+    const res = await fetch('/api/household', { method: 'DELETE' });
+    if (res.ok) setHousehold(null);
+    else setHouseholdFeedback({ type: 'error', msg: 'Failed. Try again.' });
+  }
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   async function handleDefaultPeopleChange(n: number) {
@@ -395,6 +500,163 @@ export default function SettingsPage() {
                   {deleteLoading ? 'Deleting…' : 'Delete my account'}
                 </button>
               </div>
+            </div>
+          )}
+        </Section>
+
+        {/* ── Household ──────────────────────────────────────────────────── */}
+        <Section icon={<Home size={15} />} title="Household">
+          {household === 'loading' ? (
+            <p className="text-sm text-zinc-400">Loading…</p>
+          ) : !household ? (
+            /* No household — create one */
+            <div className="flex flex-col gap-4">
+              <p className="text-sm text-zinc-500 leading-relaxed">
+                Create a household so family members or housemates can share the same meal plans and shopping list.
+              </p>
+              <Field label="Household name">
+                <input
+                  type="text"
+                  value={newHouseholdName}
+                  onChange={(e) => setNewHouseholdName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCreateHousehold()}
+                  placeholder="e.g. The Smiths"
+                  className={inputCls}
+                  maxLength={60}
+                />
+              </Field>
+              {householdFeedback && <Feedback type={householdFeedback.type} message={householdFeedback.msg} />}
+              <button
+                onClick={handleCreateHousehold}
+                disabled={!newHouseholdName.trim() || creatingHousehold}
+                className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-zinc-900 text-white text-sm font-semibold hover:bg-zinc-700 disabled:opacity-40 transition cursor-pointer"
+              >
+                <Home size={14} />
+                {creatingHousehold ? 'Creating…' : 'Create household'}
+              </button>
+            </div>
+          ) : (
+            /* Household exists */
+            <div className="flex flex-col gap-5">
+              {/* Name + role */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-zinc-100 flex items-center justify-center flex-shrink-0">
+                  <Home size={18} className="text-zinc-600" />
+                </div>
+                <div>
+                  <p className="text-base font-black text-zinc-900">{household.name}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    {household.role === 'owner'
+                      ? <><Crown size={11} className="text-amber-500" /><span className="text-xs text-zinc-400 font-medium">Owner</span></>
+                      : <><Users size={11} className="text-zinc-400" /><span className="text-xs text-zinc-400 font-medium">Member · managed by <strong className="text-zinc-600">{household.ownerUsername}</strong></span></>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              {/* Members list */}
+              {household.members.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2">Members</p>
+                  <div className="flex flex-col divide-y divide-zinc-50">
+                    {household.members.map((m) => (
+                      <div key={m.userId} className="flex items-center justify-between py-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-zinc-100 flex items-center justify-center text-xs font-bold text-zinc-600">
+                            {m.username[0].toUpperCase()}
+                          </div>
+                          <span className="text-sm font-semibold text-zinc-800">{m.username}</span>
+                        </div>
+                        {household.role === 'owner' && (
+                          <button
+                            onClick={() => handleRemoveMember(m.userId)}
+                            className="p-1 rounded-lg text-zinc-300 hover:text-red-500 hover:bg-red-50 cursor-pointer transition-colors"
+                            title={`Remove ${m.username}`}
+                          >
+                            <UserMinus size={14} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Invite link (owner only) */}
+              {household.role === 'owner' && (
+                <div>
+                  <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2">Invite a member</p>
+                  <div className="flex flex-col gap-2">
+                    <input
+                      type="text"
+                      value={inviteNote}
+                      onChange={(e) => setInviteNote(e.target.value)}
+                      placeholder="Optional note for invitee"
+                      className={inputCls}
+                      maxLength={200}
+                    />
+                    <button
+                      onClick={handleGenerateInvite}
+                      disabled={generatingInvite}
+                      className="flex items-center justify-center gap-2 py-2.5 rounded-2xl border border-zinc-200 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 transition cursor-pointer"
+                    >
+                      {copiedToken ? (
+                        <><Check size={14} className="text-emerald-500" /> Link copied!</>
+                      ) : (
+                        <><Link2 size={14} />{generatingInvite ? 'Generating…' : 'Generate & copy invite link'}</>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Pending invites */}
+                  {household.pendingInvites.length > 0 && (
+                    <div className="mt-3">
+                      <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">Pending invites</p>
+                      {household.pendingInvites.map((inv) => (
+                        <div key={inv.token} className="flex items-center justify-between py-1.5 text-sm">
+                          <div className="flex items-center gap-1.5 text-zinc-500 text-xs">
+                            <UserPlus size={11} />
+                            <span className="font-mono text-zinc-400">{inv.token.slice(0, 8)}…</span>
+                            {inv.note && <span className="italic">"{inv.note.slice(0, 30)}"</span>}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={async () => {
+                                const url = `${window.location.origin}${inv.inviteUrl}`;
+                                await navigator.clipboard.writeText(url).catch(() => {});
+                                setCopiedToken(inv.token);
+                                setTimeout(() => setCopiedToken(null), 2000);
+                              }}
+                              className="text-zinc-400 hover:text-zinc-700 cursor-pointer transition-colors"
+                              title="Copy link"
+                            >
+                              {copiedToken === inv.token ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                            </button>
+                            <button
+                              onClick={() => handleRevokeInvite(inv.token)}
+                              className="text-zinc-300 hover:text-red-500 cursor-pointer transition-colors"
+                              title="Revoke"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {householdFeedback && <Feedback type={householdFeedback.type} message={householdFeedback.msg} />}
+
+              {/* Leave / dissolve */}
+              <button
+                onClick={handleLeaveOrDissolve}
+                className="flex items-center justify-center gap-2 py-2.5 rounded-2xl border border-red-200 text-sm font-semibold text-red-600 hover:bg-red-50 transition cursor-pointer"
+              >
+                <UserMinus size={14} />
+                {household.role === 'owner' ? 'Dissolve household' : 'Leave household'}
+              </button>
             </div>
           )}
         </Section>
