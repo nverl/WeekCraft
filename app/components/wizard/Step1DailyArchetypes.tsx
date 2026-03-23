@@ -92,9 +92,10 @@ interface DayRowProps {
   isOpen: boolean;
   onToggle: () => void;
   onChange: (partial: Partial<DayConfig>) => void;
+  defaultPeople: number;
 }
 
-function DayRow({ dayIndex, config, isOpen, onToggle, onChange }: DayRowProps) {
+function DayRow({ dayIndex, config, isOpen, onToggle, onChange, defaultPeople }: DayRowProps) {
   const badge = getLabelOpt(config.label);
   const hasFilters = config.label !== 'none' && (config.maxPrepMins !== null || config.maxCalories !== null);
 
@@ -263,16 +264,16 @@ function DayRow({ dayIndex, config, isOpen, onToggle, onChange }: DayRowProps) {
               </div>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => onChange({ people: Math.max(1, (config.people ?? 2) - 1) })}
+                  onClick={() => onChange({ people: Math.max(1, (config.people ?? defaultPeople) - 1) })}
                   className="w-7 h-7 rounded-full border border-zinc-300 flex items-center justify-center text-zinc-600 hover:border-zinc-900 hover:text-zinc-900 transition-all cursor-pointer"
                 >
                   <Minus size={12} />
                 </button>
                 <span className="w-6 text-center text-sm font-black text-zinc-900">
-                  {config.people ?? 2}
+                  {config.people ?? defaultPeople}
                 </span>
                 <button
-                  onClick={() => onChange({ people: Math.min(12, (config.people ?? 2) + 1) })}
+                  onClick={() => onChange({ people: Math.min(12, (config.people ?? defaultPeople) + 1) })}
                   className="w-7 h-7 rounded-full border border-zinc-300 flex items-center justify-center text-zinc-600 hover:border-zinc-900 hover:text-zinc-900 transition-all cursor-pointer"
                 >
                   <Plus size={12} />
@@ -307,7 +308,7 @@ function DayRow({ dayIndex, config, isOpen, onToggle, onChange }: DayRowProps) {
 // ─── Step1DailyArchetypes ─────────────────────────────────────────────────────
 
 export default function Step1DailyArchetypes() {
-  const { dayConfigs, setDayConfig } = useWizardStore();
+  const { dayConfigs, setDayConfig, people } = useWizardStore();
   const [openDay, setOpenDay] = useState<number | null>(0); // Monday open by default
 
   return (
@@ -334,6 +335,7 @@ export default function Step1DailyArchetypes() {
             isOpen={openDay === i}
             onToggle={() => setOpenDay(openDay === i ? null : i)}
             onChange={(partial) => setDayConfig(i, partial)}
+            defaultPeople={people}
           />
         ))}
       </div>
