@@ -95,12 +95,14 @@ function generatePlan(
     // Deterministic pick (rotate through candidates)
     const recipe = candidates[i % candidates.length];
 
+    const effectivePeople = config.people ?? people;
     plan.push({
       day: DAYS_OF_WEEK[i] ?? `Day ${i + 1}`,
       date: date.toISOString(),
       label,
       recipe,
-      scaledIngredients: scaleIngredients(recipe.ingredients, people, recipe.recipeYield),
+      people: config.people,   // store per-day override (undefined = use week default)
+      scaledIngredients: scaleIngredients(recipe.ingredients, effectivePeople, recipe.recipeYield),
     });
   }
 
@@ -180,7 +182,7 @@ export const useWizardStore = create<WizardStore>()(
         set({ plan, currentStep: 3 });
       },
 
-      resetWizard: () => set({ ...initialState }),
+      resetWizard: () => set((state) => ({ ...initialState, people: state.people })),
 
       swapRecipe: (dayIndex, recipes) => {
         set((state) => {
