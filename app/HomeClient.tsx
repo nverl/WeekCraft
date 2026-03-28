@@ -12,6 +12,7 @@ import WeekDetailView from '@/app/components/calendar/WeekDetailView';
 import ShoppingList from '@/app/components/shopping/ShoppingList';
 import RecipesView from '@/app/components/recipes/RecipesView';
 import DataLoader from '@/app/components/DataLoader';
+import HouseholdSwitcher from '@/app/components/HouseholdSwitcher';
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -130,7 +131,8 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
             <Sparkles size={18} className="text-orange-500" />
             <span className="font-black text-zinc-900">WeekCraft</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <HouseholdSwitcher />
             <button
               onClick={handleNewPlan}
               className="text-xs text-zinc-400 hover:text-zinc-600 underline cursor-pointer"

@@ -22,7 +22,7 @@ model User {
   favourites       RecipeFavourite[]
   notes            RecipeNote[]
   ownedHousehold   Household?        @relation("HouseholdOwner")
-  householdMember  HouseholdMember?
+  householdMemberships HouseholdMember[]
   sentInvites      HouseholdInvite[] @relation("InviteSender")
 }
 
@@ -39,7 +39,7 @@ model Household {
 
 model HouseholdMember {
   householdId String
-  userId      String    @unique
+  userId      String
   household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   joinedAt    DateTime  @default(now())

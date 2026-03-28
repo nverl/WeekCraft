@@ -2,14 +2,19 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 
-/** GET /api/household — return the caller's household info (or null) */
+/**
+ * GET /api/household
+ * Returns the caller's owned household with full management details (members, invites).
+ * Used by the Settings page for household management.
+ * For the lightweight list of all households (owned + member), use GET /api/households.
+ */
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const userId = session.user.id;
 
-  // User may be an owner or a member
+  // Return owned household with full management data
   const owned = await prisma.household.findUnique({
     where: { ownerId: userId },
     include: {
@@ -35,33 +40,6 @@ export async function GET() {
     });
   }
 
-  const membership = await prisma.householdMember.findUnique({
-    where: { userId },
-    include: {
-      household: {
-        include: {
-          owner: { select: { id: true, username: true } },
-          members: { include: { user: { select: { id: true, username: true } } } },
-        },
-      },
-    },
-  });
-
-  if (membership) {
-    return NextResponse.json({
-      id: membership.household.id,
-      name: membership.household.name,
-      role: 'member',
-      ownerUsername: membership.household.owner.username,
-      members: membership.household.members.map((m) => ({
-        userId: m.userId,
-        username: m.user.username,
-        joinedAt: m.joinedAt,
-      })),
-      pendingInvites: [],
-    });
-  }
-
   return NextResponse.json(null);
 }
 
@@ -72,15 +50,12 @@ export async function POST(req: Request) {
 
   const userId = session.user.id;
 
-  // Can't create if already owner or member
+  // Can't create if already owns a household
   const existing = await prisma.household.findUnique({ where: { ownerId: userId } });
   if (existing) return NextResponse.json({ error: 'You already own a household' }, { status: 409 });
 
-  const member = await prisma.householdMember.findUnique({ where: { userId } });
-  if (member) return NextResponse.json({ error: 'You are already in a household' }, { status: 409 });
-
   const body = await req.json().catch(() => ({}));
-  const name = typeof body.name === 'string' && body.name.trim() ? body.name.trim().slice(0, 60) : "My Household";
+  const name = typeof body.name === 'string' && body.name.trim() ? body.name.trim().slice(0, 60) : 'My Household';
 
   const household = await prisma.household.create({
     data: { name, ownerId: userId },
@@ -104,25 +79,39 @@ export async function PATCH(req: Request) {
   return NextResponse.json({ name: updated.name });
 }
 
-/** DELETE /api/household — owner dissolves household; member leaves */
-export async function DELETE() {
+/**
+ * DELETE /api/household
+ * - No query param → dissolves the caller's owned household (owner only)
+ * - ?householdId={id} → leave that specific household as a member
+ */
+export async function DELETE(req: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const userId = session.user.id;
+  const { searchParams } = new URL(req.url);
+  const householdId = searchParams.get('householdId');
 
+  if (householdId) {
+    // Leave a specific household as a member
+    const membership = await prisma.householdMember.findFirst({
+      where: { userId, householdId },
+    });
+    if (!membership) return NextResponse.json({ error: 'You are not a member of this household' }, { status: 404 });
+
+    await prisma.householdMember.delete({
+      where: { householdId_userId: { householdId, userId } },
+    });
+    return NextResponse.json({ ok: true, action: 'left' });
+  }
+
+  // No householdId → dissolve owned household
   const owned = await prisma.household.findUnique({ where: { ownerId: userId } });
   if (owned) {
-    // Deleting household cascades members + invites + household week plans
+    // Cascade deletes members + invites + household week plans
     await prisma.household.delete({ where: { id: owned.id } });
     return NextResponse.json({ ok: true, action: 'dissolved' });
   }
 
-  const member = await prisma.householdMember.findUnique({ where: { userId } });
-  if (member) {
-    await prisma.householdMember.delete({ where: { userId } });
-    return NextResponse.json({ ok: true, action: 'left' });
-  }
-
-  return NextResponse.json({ error: 'Not in any household' }, { status: 404 });
+  return NextResponse.json({ error: 'Not the owner of any household' }, { status: 404 });
 }

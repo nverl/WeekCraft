@@ -4,6 +4,21 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { WeekPlan, SelectedExtra } from '@/app/types';
 
+/** Returns the current active scope from householdStore without creating a React dependency. */
+function getActiveScope(): string {
+  try {
+    // Read directly from localStorage to avoid a cross-store import cycle at module level
+    const raw = localStorage.getItem('weekcraft-household-scope');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return parsed?.state?.activeScope ?? 'personal';
+    }
+  } catch {
+    // localStorage not available (SSR) or parse error
+  }
+  return 'personal';
+}
+
 interface WeekPlanStore {
   weeks: Record<string, WeekPlan>;
   hydrated: boolean;
@@ -13,6 +28,7 @@ interface WeekPlanStore {
   selectedWeeksForShopping: string[];
 
   hydrate: (plans: WeekPlan[]) => void;
+  resetHydration: () => void;
   saveWeek: (plan: WeekPlan) => void;
   deleteWeek: (weekStart: string) => void;
   setActiveWeek: (weekStart: string | null) => void;
@@ -40,9 +56,12 @@ export const useWeekPlanStore = create<WeekPlanStore>()(
           hydrated: true,
         }),
 
+      resetHydration: () => set({ weeks: {}, hydrated: false }),
+
       saveWeek: (plan) => {
         set((state) => ({ weeks: { ...state.weeks, [plan.weekStart]: plan } }));
-        fetch('/api/plans', {
+        const scope = getActiveScope();
+        fetch(`/api/plans?scope=${encodeURIComponent(scope)}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(plan),
@@ -59,7 +78,10 @@ export const useWeekPlanStore = create<WeekPlanStore>()(
             activeWeekStart: state.activeWeekStart === weekStart ? null : state.activeWeekStart,
           };
         });
-        fetch(`/api/plans/${encodeURIComponent(weekStart)}`, { method: 'DELETE' }).catch(console.error);
+        const scope = getActiveScope();
+        fetch(`/api/plans/${encodeURIComponent(weekStart)}?scope=${encodeURIComponent(scope)}`, {
+          method: 'DELETE',
+        }).catch(console.error);
       },
 
       setActiveWeek: (weekStart) => set({ activeWeekStart: weekStart }),
@@ -86,10 +108,11 @@ export const useWeekPlanStore = create<WeekPlanStore>()(
           );
           const exists = current.find((e) => e.id === extraId);
           const next = exists
-            ? current.filter((e) => e.id !== extraId)        // remove
-            : [...current, { id: extraId, qty: 1 }];         // add with qty 1
+            ? current.filter((e) => e.id !== extraId)
+            : [...current, { id: extraId, qty: 1 }];
           const updated = { ...week, selectedExtras: next };
-          fetch('/api/plans', {
+          const scope = getActiveScope();
+          fetch(`/api/plans?scope=${encodeURIComponent(scope)}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updated),
@@ -111,11 +134,12 @@ export const useWeekPlanStore = create<WeekPlanStore>()(
           } else {
             const exists = current.find((e) => e.id === extraId);
             next = exists
-              ? current.map((e) => e.id === extraId ? { ...e, qty } : e)
+              ? current.map((e) => (e.id === extraId ? { ...e, qty } : e))
               : [...current, { id: extraId, qty }];
           }
           const updated = { ...week, selectedExtras: next };
-          fetch('/api/plans', {
+          const scope = getActiveScope();
+          fetch(`/api/plans?scope=${encodeURIComponent(scope)}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updated),

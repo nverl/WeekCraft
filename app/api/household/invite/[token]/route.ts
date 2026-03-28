@@ -43,16 +43,12 @@ export async function POST(_req: Request, { params }: { params: Promise<{ token:
   if (invite.acceptedAt) return NextResponse.json({ error: 'Invite already used' }, { status: 410 });
   if (invite.expiresAt < new Date()) return NextResponse.json({ error: 'Invite has expired' }, { status: 410 });
 
-  // Can't join if already in a household (as owner or member)
-  const ownedHousehold = await prisma.household.findUnique({ where: { ownerId: userId } });
-  if (ownedHousehold) return NextResponse.json({ error: 'You already own a household. Leave it first.' }, { status: 409 });
-
-  const existingMembership = await prisma.householdMember.findUnique({ where: { userId } });
+  // Can't join a household you're already a member of
+  const existingMembership = await prisma.householdMember.findFirst({
+    where: { userId, householdId: invite.householdId },
+  });
   if (existingMembership) {
-    if (existingMembership.householdId === invite.householdId) {
-      return NextResponse.json({ error: 'You are already in this household' }, { status: 409 });
-    }
-    return NextResponse.json({ error: 'You are already in another household. Leave it first.' }, { status: 409 });
+    return NextResponse.json({ error: 'You are already a member of this household' }, { status: 409 });
   }
 
   // Can't accept your own invite
