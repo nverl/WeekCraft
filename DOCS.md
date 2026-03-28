@@ -113,10 +113,12 @@ Settings
 - One user can **create a household** (becomes owner)
 - Owner can **generate invite links** (token-based, 7-day expiry)
 - Invited users visit `/invite/[token]` to preview and accept/decline
-- Household members **share the same WeekPlan** — all members see and edit the same weekly plan
-- Owner can remove members; members can leave
-- Owner can dissolve the household (deletes all household data)
-- Plan scoping: `resolveScope(userId)` helper checks owner → member → personal, returns `{ householdId }` or `{ userId }` for Prisma queries
+- A user can be a **member of multiple households simultaneously** (e.g. family + work lunch group)
+- Household members **share the same WeekPlan** for that household — all members see and edit it
+- Owner can remove members; members can leave individual households independently
+- Owner can dissolve their household (cascades delete all members/invites/plans)
+- **Scope switcher**: a dropdown in the app header (`HouseholdSwitcher`) lets users switch between *Personal*, and each household they belong to — plans reload automatically
+- Plans are stored in `householdStore.activeScope` (localStorage-persisted) and passed as `?scope=` to all plan API calls
 
 ### PWA
 - Registered as a Progressive Web App
@@ -250,7 +252,8 @@ npm run dev
 | RSC reads `recipes.json` server-side | Seed recipes never need a DB query; passed as `seedRecipes` prop to `HomeClient` |
 | Zustand + localStorage persist | Offline-capable; no loading state needed for UI state |
 | Per-recipe notes saved server-side | Notes must survive localStorage clears and work across devices |
-| Household plan scoping via `resolveScope()` | Single helper centralises ownership/membership logic for all plan API routes |
+| Explicit `?scope=` param on plan API | Client controls which scope to read/write; server validates access. Replaces old auto-detect `resolveScope()` |
+| `activeScope` read from localStorage in `weekPlanStore` | Avoids circular store imports; `householdStore` and `weekPlanStore` stay independent |
 | Ingredient scaling client-side | `scaledAmount = (people / recipe.recipeYield) * ingredient.amount` — no server round-trip needed |
 | ISO 8601 durations for prep time | `PT30M`, `PT1H15M` — machine-readable, parsed by `parseISODuration()` in `wizardStore.ts` |
 
@@ -503,7 +506,7 @@ Database: **Neon PostgreSQL** (serverless). Schema in `prisma/schema.prisma`.
 | defaultPeople | Int | Default 2; used to pre-fill wizard |
 | createdAt | DateTime | |
 
-Relations: `recipes`, `extras`, `ingredients`, `weekPlans`, `favourites`, `notes`, `ownedHousehold`, `householdMember`, `sentInvites`
+Relations: `recipes`, `extras`, `ingredients`, `weekPlans`, `favourites`, `notes`, `ownedHousehold`, `householdMemberships` (one-to-many — a user can be a member of multiple households), `sentInvites`
 
 #### `WeekPlan`
 | Field | Type | Notes |
@@ -578,7 +581,8 @@ All stores use Zustand's `persist` middleware writing to `localStorage`.
 |---|---|---|
 | `wizardStore` | `kitchenflow-wizard` | Wizard step state, day configs, people, plan, extras |
 | `shoppingStore` | `kitchenflow-shopping` | Shopping items, pantry state |
-| `weekPlanStore` | `kitchenflow-weekplan` | Saved week plans (multi-week) |
+| `weekPlanStore` | `weekcraft-ui-v1` | Saved week plans (multi-week), active week, shopping selection |
+| `householdStore` | `weekcraft-household-scope` | Active scope (`'personal'` or `householdId`) + all accessible households |
 | `recipeStore` | `kitchenflow-recipes` | Seed + custom recipes merged |
 | `extrasStore` | `kitchenflow-extras` | Seed + custom extras merged |
 | `ingredientStore` | `kitchenflow-ingredients` | User ingredient catalogue |
@@ -594,9 +598,18 @@ All stores use Zustand's `persist` middleware writing to `localStorage`.
 - `parseISODuration(iso)` — exported helper: parses `"PT1H30M"` → `90` (minutes)
 
 #### `weekPlanStore`
-- `setExtraQtyForWeek(weekStart, extraId, qty)` — update qty of an extra for a specific week; qty ≤ 0 removes the extra
-- `savePlan(weekStart, plan)` — persist a plan
-- `getActivePlan(weekStart)` — retrieve plan for a week
+- `saveWeek(plan)` — optimistic update + PUT `/api/plans?scope=<activeScope>`
+- `deleteWeek(weekStart)` — optimistic update + DELETE `/api/plans/[weekStart]?scope=<activeScope>`
+- `hydrate(plans)` — bulk-loads plans from DB into store
+- `resetHydration()` — clears plan data and sets `hydrated: false` (called before scope-change reload)
+- `setExtraQtyForWeek(weekStart, extraId, qty)` — update qty of an extra; qty ≤ 0 removes it
+- Active scope is read from `localStorage` at call time (avoids circular imports with `householdStore`)
+
+#### `householdStore`
+- `activeScope: string` — `'personal'` or a `householdId`; persisted to localStorage
+- `households: HouseholdInfo[]` — all households the user has access to (populated by DataLoader)
+- `setActiveScope(scope)` — switches plan context; DataLoader re-fetches plans in response
+- `hydrateHouseholds(households)` — validates stored scope is still accessible; resets to `'personal'` if not
 
 #### `shoppingStore`
 - `buildShoppingList(plans, extras)` — aggregate ingredients across all DayPlans + selected Extras
@@ -604,14 +617,19 @@ All stores use Zustand's `persist` middleware writing to `localStorage`.
 
 ### `DataLoader.tsx`
 
-Runs once after session authentication. Fetches:
-1. `/api/plans` — all week plans
+**Initial load** (runs once after session authentication). Parallel fetches:
+1. `/api/plans?scope=<activeScope>` — week plans for the current scope
 2. `/api/user-recipes` — custom recipes
 3. `/api/user-extras` — custom extras
 4. `/api/user-ingredients` — custom ingredients
 5. `/api/account/me` — account info including `defaultPeople`
+6. `/api/households` — all accessible households (owned + member)
 
-After fetching, calls `setPeople(account.defaultPeople)` on the wizard store so the wizard always reflects the user's saved household size.
+After fetching, calls `setPeople(account.defaultPeople)` on the wizard store and `hydrateHouseholds()` on the household store.
+
+**Migration helper**: if `activeScope === 'personal'`, no personal plans exist, and the user has households, DataLoader auto-switches the scope to the first household. This prevents existing users from seeing an empty plan list after the multi-household update.
+
+**Scope change reload**: a second `useEffect` watches `activeScope`. When it changes (after initial load), it calls `resetHydration()` and re-fetches `/api/plans?scope=<newScope>` to swap the displayed plans.
 
 ---
 
@@ -637,14 +655,13 @@ All routes require an authenticated session (checked via `auth()` from NextAuth)
 
 | Method | Route | Description |
 |---|---|---|
-| GET | `/api/plans` | Returns all WeekPlans for the user (or their household) |
-| PUT | `/api/plans` | Upsert a WeekPlan. Uses `resolveScope(userId)` to determine household vs personal |
-| DELETE | `/api/plans/[weekStart]` | Delete a specific week's plan |
+| GET | `/api/plans?scope=` | Returns all WeekPlans for the requested scope |
+| PUT | `/api/plans?scope=` | Upsert a WeekPlan into the requested scope |
+| DELETE | `/api/plans/[weekStart]?scope=` | Delete a specific week's plan from the requested scope |
 
-**`resolveScope(userId)`** logic:
-1. If user owns a household → use `{ householdId }`
-2. Else if user is a member of a household → use `{ householdId }`
-3. Else → use `{ userId }`
+**`?scope=` parameter**:
+- `personal` — stores/fetches plans under the user's own `userId`
+- `<householdId>` — stores/fetches plans under that household's `householdId` (access validated server-side: must be owner or member)
 
 ### Custom Recipes
 
@@ -668,16 +685,18 @@ All routes require an authenticated session (checked via `auth()` from NextAuth)
 
 | Method | Route | Description |
 |---|---|---|
-| GET | `/api/household` | Get current user's household info + members |
-| POST | `/api/household` | Create a household |
-| PATCH | `/api/household` | Update household name |
-| DELETE | `/api/household` | Dissolve household (owner only) |
-| POST | `/api/household/invite` | Generate a new invite token (7-day expiry) |
-| GET | `/api/household/invite` | List active invites |
-| GET | `/api/household/invite/[token]` | Preview invite (no auth required) |
-| POST | `/api/household/invite/[token]` | Accept invite |
+| GET | `/api/household` | Get caller's **owned** household details (members + invites) — used by Settings |
+| POST | `/api/household` | Create a household (caller becomes owner) |
+| PATCH | `/api/household` | Rename household (owner only) |
+| DELETE | `/api/household` | Dissolve owned household (owner only, no `householdId` param) |
+| DELETE | `/api/household?householdId={id}` | Leave a specific household as a member |
+| GET | `/api/households` | List **all** households the user belongs to (owned + all memberships) — used by HouseholdSwitcher |
+| POST | `/api/household/invite` | Generate a new invite token (7-day expiry, owner only) |
+| GET | `/api/household/invite` | List active pending invites (owner only) |
+| GET | `/api/household/invite/[token]` | Preview invite info (no auth required) |
+| POST | `/api/household/invite/[token]` | Accept invite — user may join while already a member of other households |
 | DELETE | `/api/household/invite/[token]` | Revoke invite (owner only) |
-| DELETE | `/api/household/member/[userId]` | Remove a member (owner) or leave (self) |
+| DELETE | `/api/household/member/[userId]` | Remove a specific member (owner only) |
 
 ### Other
 
