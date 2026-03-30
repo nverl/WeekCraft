@@ -50,6 +50,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       ingredients: body.ingredients as object[],
       sourceUrl: typeof body.sourceUrl === 'string' ? body.sourceUrl : null,
       youtubeUrl: typeof body.youtubeUrl === 'string' ? body.youtubeUrl : null,
+      ...(typeof body.enabled === 'boolean' ? { enabled: body.enabled } : {}),
     },
   });
   return NextResponse.json({ ok: true });

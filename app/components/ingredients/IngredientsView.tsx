@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, Lock, Search, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Lock, Search, X, Copy } from 'lucide-react';
 import { useIngredientStore } from '@/app/store/ingredientStore';
 import type { IngredientEntry } from '@/app/types';
 
@@ -115,6 +115,12 @@ export default function IngredientsView() {
     setEditingId(null);
   };
 
+  /** For built-in ingredients: duplicate as a new custom entry instead of editing in place. */
+  const handleDuplicateBuiltin = (entry: IngredientEntry) => {
+    const { id: _id, isCustom: _ic, ...data } = entry;
+    addIngredient({ ...data, name: `${data.name} (copy)` });
+  };
+
   const handleDelete = (id: string) => {
     if (confirm('Remove this ingredient from the catalog?')) removeIngredient(id);
   };
@@ -218,13 +224,23 @@ export default function IngredientsView() {
 
                         {/* Actions */}
                         <div className="flex items-center gap-3 flex-shrink-0">
-                          <button
-                            onClick={() => { setEditingId(entry.id); setShowAddForm(false); }}
-                            className="text-zinc-400 hover:text-zinc-900 cursor-pointer transition-colors"
-                            title="Edit"
-                          >
-                            <Pencil size={13} />
-                          </button>
+                          {entry.isCustom ? (
+                            <button
+                              onClick={() => { setEditingId(entry.id); setShowAddForm(false); }}
+                              className="text-zinc-400 hover:text-zinc-900 cursor-pointer transition-colors"
+                              title="Edit"
+                            >
+                              <Pencil size={13} />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleDuplicateBuiltin(entry)}
+                              className="flex items-center gap-1 text-xs font-semibold text-zinc-400 hover:text-zinc-900 cursor-pointer transition-colors"
+                              title="Duplicate as custom"
+                            >
+                              <Copy size={12} /> Duplicate
+                            </button>
+                          )}
                           {entry.isCustom && (
                             <button
                               onClick={() => handleDelete(entry.id)}

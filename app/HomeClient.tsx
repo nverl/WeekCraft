@@ -40,11 +40,14 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
     toggleWeekForShopping, selectedWeeksForShopping,
     setActiveWeek,
   } = useWeekPlanStore();
-  const { customRecipes } = useRecipeStore();
+  const { customRecipes, disabledBuiltinIds } = useRecipeStore();
   const [view, setView] = useState<AppView>('home');
 
-  // Merge seed + custom recipes
-  const allRecipes: Recipe[] = [...seedRecipes, ...customRecipes];
+  // Merge seed + custom recipes; mark disabled built-ins so plan generation skips them
+  const allRecipes: Recipe[] = [
+    ...seedRecipes.map((r) => disabledBuiltinIds.includes(r.id) ? { ...r, enabled: false } : r),
+    ...customRecipes,
+  ];
 
   const hasPlans = Object.keys(weeks).length > 0;
   const showWizard = wizardOpen || (!hydrated ? false : !hasPlans);

@@ -472,65 +472,6 @@ export default function SettingsPage() {
           </form>
         </Section>
 
-        {/* Sign out */}
-        <button
-          onClick={() => signOut({ callbackUrl: '/login' })}
-          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border border-zinc-200 bg-white text-sm font-semibold text-zinc-700 hover:bg-zinc-50 transition cursor-pointer"
-        >
-          <LogOut size={15} />
-          Sign out
-        </button>
-
-        {/* Danger zone */}
-        <Section icon={<Trash2 size={15} />} title="Danger zone">
-          {!deleteOpen ? (
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-zinc-800">Delete account</p>
-                <p className="text-xs text-zinc-400 mt-0.5">Permanently removes all your data</p>
-              </div>
-              <button
-                onClick={() => setDeleteOpen(true)}
-                className="px-4 py-2 rounded-xl bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 transition cursor-pointer"
-              >
-                Delete
-              </button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4">
-              <p className="text-sm text-zinc-700">
-                Type <span className="font-bold text-zinc-900">{currentUsername}</span> to confirm:
-              </p>
-              <input
-                ref={deleteInputRef}
-                type="text"
-                value={deleteConfirm}
-                onChange={(e) => setDeleteConfirm(e.target.value)}
-                className={inputCls}
-                placeholder={currentUsername}
-              />
-              {deleteFeedback && <Feedback type={deleteFeedback.type} message={deleteFeedback.msg} />}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => { setDeleteOpen(false); setDeleteConfirm(''); }}
-                  className="flex-1 py-2.5 rounded-2xl border border-zinc-200 text-sm font-semibold text-zinc-600 hover:bg-zinc-50 transition cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDeleteAccount}
-                  disabled={deleteConfirm !== currentUsername || deleteLoading}
-                  className="flex-1 py-2.5 rounded-2xl bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition disabled:opacity-40 cursor-pointer"
-                >
-                  {deleteLoading ? 'Deleting…' : 'Delete my account'}
-                </button>
-              </div>
-            </div>
-          )}
-        </Section>
-
-        {/* ── Households ─────────────────────────────────────────────────── */}
-
         {/* Owned household — full management */}
         <Section icon={<Crown size={15} />} title="My household">
           {householdsLoading ? (
@@ -710,6 +651,63 @@ export default function SettingsPage() {
             </div>
           </Section>
         )}
+
+        {/* Sign out */}
+        <button
+          onClick={() => signOut({ callbackUrl: '/login' })}
+          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border border-zinc-200 bg-white text-sm font-semibold text-zinc-700 hover:bg-zinc-50 transition cursor-pointer"
+        >
+          <LogOut size={15} />
+          Sign out
+        </button>
+
+        {/* Danger zone */}
+        <Section icon={<Trash2 size={15} />} title="Danger zone">
+          {!deleteOpen ? (
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-zinc-800">Delete account</p>
+                <p className="text-xs text-zinc-400 mt-0.5">Permanently removes all your data</p>
+              </div>
+              <button
+                onClick={() => setDeleteOpen(true)}
+                className="px-4 py-2 rounded-xl bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 transition cursor-pointer"
+              >
+                Delete
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <p className="text-sm text-zinc-700">
+                Type <span className="font-bold text-zinc-900">{currentUsername}</span> to confirm:
+              </p>
+              <input
+                ref={deleteInputRef}
+                type="text"
+                value={deleteConfirm}
+                onChange={(e) => setDeleteConfirm(e.target.value)}
+                className={inputCls}
+                placeholder={currentUsername}
+              />
+              {deleteFeedback && <Feedback type={deleteFeedback.type} message={deleteFeedback.msg} />}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setDeleteOpen(false); setDeleteConfirm(''); }}
+                  className="flex-1 py-2.5 rounded-2xl border border-zinc-200 text-sm font-semibold text-zinc-600 hover:bg-zinc-50 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deleteConfirm !== currentUsername || deleteLoading}
+                  className="flex-1 py-2.5 rounded-2xl bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition disabled:opacity-40 cursor-pointer"
+                >
+                  {deleteLoading ? 'Deleting…' : 'Delete my account'}
+                </button>
+              </div>
+            </div>
+          )}
+        </Section>
 
       </div>
     </div>

@@ -57,7 +57,7 @@ export default function WizardContainer({ recipes, onComplete, onCancel }: Wizar
         <div className="relative text-center mb-8">
           <div className="inline-flex items-center gap-2 text-2xl font-black text-zinc-900 mb-1">
             <Sparkles size={22} className="text-orange-500" />
-            KitchenFlow
+            WeekCraft
           </div>
           <p className="text-zinc-500 text-sm">{weekSubtitle}</p>
 

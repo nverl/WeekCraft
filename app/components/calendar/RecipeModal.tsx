@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Clock, Flame, Users, ChefHat, ExternalLink, StickyNote } from 'lucide-react';
 import { parseISODuration } from '@/app/store/wizardStore';
 import { useRecipeStore } from '@/app/store/recipeStore';
@@ -65,9 +66,9 @@ export default function RecipeModal({ dayPlan, people, onClose }: RecipeModalPro
 
   if (!recipe) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center"
       role="dialog"
       aria-modal="true"
       aria-label={recipe.name}
@@ -209,6 +210,7 @@ export default function RecipeModal({ dayPlan, people, onClose }: RecipeModalPro
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

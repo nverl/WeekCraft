@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, Lock, ShoppingBag } from 'lucide-react';
+import { Plus, Pencil, Trash2, Lock, ShoppingBag, Copy } from 'lucide-react';
 import { useExtrasStore } from '@/app/store/extrasStore';
 import ExtraEditor from './ExtraEditor';
 import type { Extra, ExtraCategory } from '@/app/types';
@@ -20,10 +20,11 @@ const CAT_COLOR: Record<ExtraCategory, { bg: string; text: string; label: string
 interface ExtraCardProps {
   extra: Extra;
   onEdit: () => void;
+  onDuplicate: () => void;
   onDelete: () => void;
 }
 
-function ExtraCard({ extra, onEdit, onDelete }: ExtraCardProps) {
+function ExtraCard({ extra, onEdit, onDuplicate, onDelete }: ExtraCardProps) {
   const cat = CAT_COLOR[extra.category];
   const nonStaple = extra.ingredients.filter((i) => !i.isStaple);
 
@@ -65,14 +66,22 @@ function ExtraCard({ extra, onEdit, onDelete }: ExtraCardProps) {
         <p className="text-xs text-zinc-400">
           {nonStaple.length} item{nonStaple.length !== 1 ? 's' : ''}
         </p>
-        {/* Actions — always show for extras (seed extras can be edited too) */}
         <div className="flex gap-3">
-          <button
-            onClick={onEdit}
-            className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-zinc-900 cursor-pointer transition-colors"
-          >
-            <Pencil size={12} /> Edit
-          </button>
+          {extra.isCustom ? (
+            <button
+              onClick={onEdit}
+              className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-zinc-900 cursor-pointer transition-colors"
+            >
+              <Pencil size={12} /> Edit
+            </button>
+          ) : (
+            <button
+              onClick={onDuplicate}
+              className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-zinc-900 cursor-pointer transition-colors"
+            >
+              <Copy size={12} /> Duplicate & edit
+            </button>
+          )}
           {extra.isCustom && (
             <button
               onClick={onDelete}
@@ -95,12 +104,16 @@ export default function ExtrasView() {
   const [editorOpen, setEditorOpen]   = useState(false);
   const [editingExtra, setEditingExtra] = useState<Extra | undefined>(undefined);
 
-  const openAdd  = () => { setEditingExtra(undefined); setEditorOpen(true); };
-  const openEdit = (e: Extra) => { setEditingExtra(e); setEditorOpen(true); };
-  const closeEditor = () => { setEditorOpen(false); setEditingExtra(undefined); };
+  const [duplicating, setDuplicating] = useState(false);
+
+  const openAdd  = () => { setEditingExtra(undefined); setDuplicating(false); setEditorOpen(true); };
+  const openEdit = (e: Extra) => { setEditingExtra(e); setDuplicating(false); setEditorOpen(true); };
+  /** Pre-fill editor with built-in data; on save creates a new custom extra. */
+  const openDuplicate = (e: Extra) => { setEditingExtra(e); setDuplicating(true); setEditorOpen(true); };
+  const closeEditor = () => { setEditorOpen(false); setEditingExtra(undefined); setDuplicating(false); };
 
   const handleSave = (data: Omit<Extra, 'id' | 'isCustom'>) => {
-    if (editingExtra) {
+    if (editingExtra && !duplicating) {
       updateExtra(editingExtra.id, { ...data, isCustom: true });
     } else {
       addExtra(data);
@@ -149,6 +162,7 @@ export default function ExtrasView() {
                     key={e.id}
                     extra={e}
                     onEdit={() => openEdit(e)}
+                    onDuplicate={() => openDuplicate(e)}
                     onDelete={() => handleDelete(e.id)}
                   />
                 ))}
@@ -185,6 +199,7 @@ export default function ExtrasView() {
                   key={e.id}
                   extra={e}
                   onEdit={() => openEdit(e)}
+                  onDuplicate={() => openDuplicate(e)}
                   onDelete={() => handleDelete(e.id)}
                 />
               ))}

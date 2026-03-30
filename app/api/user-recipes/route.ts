@@ -11,6 +11,7 @@ export async function GET() {
   const recipes = rows.map(({ userId: _u, createdAt: _c, updatedAt: _upd, ...r }) => ({
     ...r,
     ingredients: r.ingredients as object[],
+    enabled: r.enabled,
   }));
   return NextResponse.json(recipes);
 }
@@ -60,6 +61,7 @@ export async function POST(req: Request) {
       ingredients: body.ingredients as object[],
       sourceUrl: typeof body.sourceUrl === 'string' ? body.sourceUrl : null,
       youtubeUrl: typeof body.youtubeUrl === 'string' ? body.youtubeUrl : null,
+      enabled: body.enabled === false ? false : true,
     },
   });
   return NextResponse.json(recipe);

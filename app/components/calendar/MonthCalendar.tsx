@@ -81,6 +81,14 @@ function WeekRow({ weekStart, currentMonth }: WeekRowProps) {
   const weekPlan = weeks[weekStart];
   const dates = getWeekDates(weekStart);
 
+  // Detect if this week contains today
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const weekStartDate = new Date(weekStart);
+  const weekEndDate = new Date(weekStart);
+  weekEndDate.setDate(weekEndDate.getDate() + 6);
+  const isCurrentWeek = today >= weekStartDate && today <= weekEndDate;
+
   const handlePlanWeek = (e: React.MouseEvent) => {
     e.stopPropagation();
     resetWizard();                  // reset first — clears old plan/step
@@ -103,11 +111,17 @@ function WeekRow({ weekStart, currentMonth }: WeekRowProps) {
     <div
       onClick={handleRowClick}
       className={`group relative rounded-2xl border transition-all
+        ${isCurrentWeek ? 'ring-2 ring-zinc-900 ring-offset-1' : ''}
         ${weekPlan
           ? 'border-zinc-200 hover:border-zinc-400 bg-white cursor-pointer hover:shadow-sm'
           : 'border-dashed border-zinc-200 bg-zinc-50'
         }`}
     >
+      {isCurrentWeek && (
+        <span className="absolute -top-2.5 left-3 text-[9px] font-bold uppercase tracking-wider bg-zinc-900 text-white px-2 py-0.5 rounded-full">
+          This week
+        </span>
+      )}
       {/* Day cells grid */}
       <div className="grid grid-cols-7 gap-0.5 px-2 pt-2 pb-1">
         {dates.map((date, i) => {

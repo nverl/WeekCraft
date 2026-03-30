@@ -177,8 +177,10 @@ export const useWizardStore = create<WizardStore>()(
 
       confirmPlan: (recipes) => {
         const { dayConfigs, people, days, targetWeekStart } = get();
-        const plan = generatePlan(recipes, dayConfigs, people, days, targetWeekStart);
-        console.log('[KitchenFlow] Generated plan:', plan);
+        // Only use enabled recipes (enabled===false is explicitly disabled)
+        const enabledRecipes = recipes.filter((r) => r.enabled !== false);
+        const plan = generatePlan(enabledRecipes, dayConfigs, people, days, targetWeekStart);
+        console.log('[WeekCraft] Generated plan:', plan);
         set({ plan, currentStep: 3 });
       },
 
@@ -190,6 +192,7 @@ export const useWizardStore = create<WizardStore>()(
           const current = plan[dayIndex];
           if (!current || current.label === 'none' || !current.recipe) return state;
 
+          // Disabled recipes can still be chosen when swapping (user explicitly picks them)
           const matching = recipes.filter(
             (r) => r.labels.includes(current.label as DayLabel) && r.id !== current.recipe!.id
           );

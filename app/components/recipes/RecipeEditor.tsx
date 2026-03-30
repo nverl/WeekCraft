@@ -27,7 +27,8 @@ interface FormIngredient {
 }
 
 interface RecipeEditorProps {
-  initial?: Recipe;       // editing an existing recipe
+  initial?: Recipe;       // editing an existing recipe (or duplicating a built-in)
+  isDuplicate?: boolean;  // when true, pre-filled from a built-in — saves as a new custom recipe
   onSave: (recipe: Omit<Recipe, 'id'>) => void;
   onCancel: () => void;
 }
@@ -36,7 +37,7 @@ function blankIngredient(): FormIngredient {
   return { name: '', amount: '', unit: '', aisle: 'Produce', isStaple: false };
 }
 
-export default function RecipeEditor({ initial, onSave, onCancel }: RecipeEditorProps) {
+export default function RecipeEditor({ initial, isDuplicate, onSave, onCancel }: RecipeEditorProps) {
   const [name, setName] = useState(initial?.name ?? '');
   const [labels, setLabels] = useState<DayLabel[]>(initial?.labels ?? ['healthy']);
   const [prepMins, setPrepMins] = useState(
@@ -154,7 +155,7 @@ export default function RecipeEditor({ initial, onSave, onCancel }: RecipeEditor
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 flex-shrink-0">
           <h2 className="text-lg font-black text-zinc-900">
-            {initial ? 'Edit Recipe' : 'New Recipe'}
+            {isDuplicate ? 'Duplicate Recipe' : initial ? 'Edit Recipe' : 'New Recipe'}
           </h2>
           <button onClick={onCancel} className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-100 hover:bg-zinc-200 cursor-pointer">
             <X size={15} />
@@ -416,7 +417,7 @@ export default function RecipeEditor({ initial, onSave, onCancel }: RecipeEditor
             onClick={handleSave}
             className="flex-1 py-3 rounded-2xl bg-zinc-900 text-white text-sm font-semibold hover:bg-zinc-700 cursor-pointer transition-colors"
           >
-            {initial ? 'Save Changes' : 'Add Recipe'}
+            {isDuplicate ? 'Save as My Recipe' : initial ? 'Save Changes' : 'Add Recipe'}
           </button>
         </div>
       </div>

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { User, Users, ChevronDown, Check } from 'lucide-react';
+import { User, Users, ChevronDown, Check, Plus } from 'lucide-react';
 import { useHouseholdStore } from '@/app/store/householdStore';
+import Link from 'next/link';
 
 /**
  * Compact dropdown in the app header that lets the user switch between:
@@ -24,9 +25,6 @@ export default function HouseholdSwitcher() {
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
-
-  // Nothing to switch if no households at all
-  if (households.length === 0) return null;
 
   const activeHousehold = households.find((h) => h.id === activeScope);
   const label = activeScope === 'personal' ? 'Personal' : (activeHousehold?.name ?? 'Household');
@@ -67,9 +65,7 @@ export default function HouseholdSwitcher() {
             {isPersonal && <Check size={13} className="text-zinc-900 flex-shrink-0" />}
           </button>
 
-          {households.length > 0 && (
-            <div className="my-1 border-t border-zinc-100" />
-          )}
+          <div className="my-1 border-t border-zinc-100" />
 
           {/* Household options */}
           {households.map((h) => {
@@ -93,6 +89,21 @@ export default function HouseholdSwitcher() {
               </button>
             );
           })}
+
+          {/* Create / manage household link */}
+          <div className="my-1 border-t border-zinc-100" />
+          <Link
+            href="/settings"
+            onClick={() => setOpen(false)}
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-zinc-50 transition cursor-pointer"
+          >
+            <div className="w-7 h-7 rounded-lg bg-zinc-100 flex items-center justify-center flex-shrink-0">
+              <Plus size={13} className="text-zinc-500" />
+            </div>
+            <p className="text-xs font-semibold text-zinc-500">
+              {households.length === 0 ? 'Create a household' : 'Manage households'}
+            </p>
+          </Link>
         </div>
       )}
     </div>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import {
   ShoppingCart, Check, ChevronDown, ChevronUp,
-  SlidersHorizontal, Package, ListTodo, Copy, CheckCheck,
+  SlidersHorizontal, Package, ListTodo, Copy, CheckCheck, MoreHorizontal,
 } from 'lucide-react';
 import { useShoppingStore, type ExtraWithQty } from '@/app/store/shoppingStore';
 import { useWeekPlanStore } from '@/app/store/weekPlanStore';
@@ -121,6 +121,8 @@ export default function ShoppingList() {
   const { extras } = useExtrasStore();
 
   const [copied, setCopied] = useState(false);
+  const [weeksExpanded, setWeeksExpanded] = useState(false);
+  const [actionsExpanded, setActionsExpanded] = useState(false);
 
   // Only show current week + up to 4 future weeks (5 total); discard past weeks
   const todayMonday = (() => {
@@ -190,25 +192,49 @@ export default function ShoppingList() {
       {/* Header */}
       <div className="bg-white border-b border-zinc-200 px-4 py-4 flex-shrink-0">
 
-        {/* Week selector */}
-        {hasPlans && (
-          <div className="mb-3 pb-3 border-b border-zinc-100">
+          {/* Compact header row */}
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h2 className="text-lg font-black text-zinc-900">Shopping List</h2>
+            <p className="text-xs text-zinc-400 mt-0.5">
+              {checkedItems} of {totalItems} items ready
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Week selector pill */}
+            {hasPlans && (
+              <button
+                onClick={() => setWeeksExpanded((v) => !v)}
+                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400 transition-all cursor-pointer"
+              >
+                {selectedWeeksForShopping.length === plannedWeekStarts.length
+                  ? 'All weeks'
+                  : selectedWeeksForShopping.length === 0
+                  ? 'No weeks'
+                  : `${selectedWeeksForShopping.length} week${selectedWeeksForShopping.length !== 1 ? 's' : ''}`}
+                <ChevronDown size={11} className={`text-zinc-400 transition-transform ${weeksExpanded ? 'rotate-180' : ''}`} />
+              </button>
+            )}
+            {/* Actions overflow */}
+            <button
+              onClick={() => setActionsExpanded((v) => !v)}
+              className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-2 rounded-xl border transition-all cursor-pointer
+                ${actionsExpanded ? 'bg-zinc-900 text-white border-zinc-900' : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400'}`}
+            >
+              <MoreHorizontal size={14} />
+            </button>
+          </div>
+        </div>
+
+        {/* Expandable week selector */}
+        {hasPlans && weeksExpanded && (
+          <div className="mb-2 p-3 bg-zinc-50 rounded-2xl border border-zinc-100">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Weeks to include</span>
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setAllWeeksForShopping(plannedWeekStarts)}
-                  className="text-xs text-zinc-400 hover:text-zinc-700 cursor-pointer transition-colors"
-                >
-                  All
-                </button>
+                <button onClick={() => setAllWeeksForShopping(plannedWeekStarts)} className="text-xs text-zinc-400 hover:text-zinc-700 cursor-pointer transition-colors">All</button>
                 <span className="text-zinc-300">·</span>
-                <button
-                  onClick={() => setAllWeeksForShopping([])}
-                  className="text-xs text-zinc-400 hover:text-zinc-700 cursor-pointer transition-colors"
-                >
-                  None
-                </button>
+                <button onClick={() => setAllWeeksForShopping([])} className="text-xs text-zinc-400 hover:text-zinc-700 cursor-pointer transition-colors">None</button>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -219,10 +245,7 @@ export default function ShoppingList() {
                     key={ws}
                     onClick={() => toggleWeekForShopping(ws)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer
-                      ${checked
-                        ? 'bg-zinc-900 text-white border-zinc-900'
-                        : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400'
-                      }`}
+                      ${checked ? 'bg-zinc-900 text-white border-zinc-900' : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400'}`}
                   >
                     {checked && <Check size={9} strokeWidth={3} />}
                     {formatWeekRange(ws)}
@@ -233,20 +256,14 @@ export default function ShoppingList() {
           </div>
         )}
 
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="text-lg font-black text-zinc-900">Shopping List</h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
-              {checkedItems} of {totalItems} items ready
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
+        {/* Expandable actions */}
+        {actionsExpanded && (
+          <div className="mb-2 flex flex-wrap gap-2 p-3 bg-zinc-50 rounded-2xl border border-zinc-100">
             {exportItems.length > 0 && (
               <>
                 <button
                   onClick={() => downloadICS(exportItems)}
                   className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400 transition-all cursor-pointer"
-                  title="Download .ics — open on Mac or iPhone to import into Reminders"
                 >
                   <ListTodo size={12} />
                   Reminders
@@ -254,7 +271,6 @@ export default function ShoppingList() {
                 <button
                   onClick={handleCopy}
                   className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400 transition-all cursor-pointer"
-                  title="Copy list as plain text"
                 >
                   {copied ? <CheckCheck size={12} className="text-emerald-500" /> : <Copy size={12} />}
                   {copied ? 'Copied!' : 'Copy'}
@@ -264,16 +280,13 @@ export default function ShoppingList() {
             <button
               onClick={toggleShowStaples}
               className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border transition-all cursor-pointer
-                ${showStaples
-                  ? 'bg-zinc-900 text-white border-zinc-900'
-                  : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400'
-                }`}
+                ${showStaples ? 'bg-zinc-900 text-white border-zinc-900' : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400'}`}
             >
               <SlidersHorizontal size={12} />
               {showStaples ? 'Hide staples' : 'Show staples'}
             </button>
           </div>
-        </div>
+        )}
 
         {/* Progress bar */}
         <div className="w-full h-1.5 bg-zinc-100 rounded-full overflow-hidden">

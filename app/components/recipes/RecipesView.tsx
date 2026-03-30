@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import {
   Plus, Clock, Flame, Leaf, Zap, Pencil, Trash2, Lock,
-  Link, Youtube, Star, Search, X, StickyNote, Dumbbell, Shuffle,
+  Link, Youtube, Star, Search, X, StickyNote, Dumbbell, Shuffle, Copy, EyeOff, Eye,
 } from 'lucide-react';
 import { parseISODuration } from '@/app/store/wizardStore';
 import { useRecipeStore } from '@/app/store/recipeStore';
@@ -27,17 +27,19 @@ const LABEL_CONFIG: Record<string, { icon: React.ReactNode; color: string; bg: s
 interface RecipeCardProps {
   recipe: Recipe;
   isCustom: boolean;
+  isEnabled: boolean;
   isFavourite: boolean;
   note: string;
-  onEdit?: () => void;
+  onEdit: () => void;
   onDelete?: () => void;
   onToggleFavourite: () => void;
   onSaveNote: (note: string) => void;
+  onToggleEnabled: () => void;
 }
 
 function RecipeCard({
-  recipe, isCustom, isFavourite, note,
-  onEdit, onDelete, onToggleFavourite, onSaveNote,
+  recipe, isCustom, isEnabled, isFavourite, note,
+  onEdit, onDelete, onToggleFavourite, onSaveNote, onToggleEnabled,
 }: RecipeCardProps) {
   const [editingNote, setEditingNote] = useState(false);
   const [noteVal, setNoteVal]         = useState('');
@@ -47,8 +49,8 @@ function RecipeCard({
   const cancelEdit = () => setEditingNote(false);
 
   return (
-    <div className="bg-white border border-zinc-200 rounded-2xl p-4 hover:border-zinc-300 transition-colors flex flex-col">
-      {/* Top row: labels + favourite */}
+    <div className={`bg-white border rounded-2xl p-4 transition-colors flex flex-col ${isEnabled ? 'border-zinc-200 hover:border-zinc-300' : 'border-zinc-100 opacity-60'}`}>
+      {/* Top row: labels + favourite + enable toggle */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex flex-wrap gap-1.5">
           {recipe.labels.map((label) => {
@@ -69,17 +71,31 @@ function RecipeCard({
               <Lock size={10} /> Built-in
             </span>
           )}
+          {!isEnabled && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-zinc-100 text-zinc-400">
+              <EyeOff size={10} /> Disabled
+            </span>
+          )}
         </div>
-        <button
-          onClick={onToggleFavourite}
-          title={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
-          className="flex-shrink-0 cursor-pointer transition-transform hover:scale-110"
-        >
-          <Star
-            size={16}
-            className={isFavourite ? 'fill-amber-400 text-amber-400' : 'text-zinc-200 hover:text-amber-300'}
-          />
-        </button>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <button
+            onClick={onToggleEnabled}
+            title={isEnabled ? 'Disable (exclude from auto-planning)' : 'Enable'}
+            className="cursor-pointer transition-colors text-zinc-300 hover:text-zinc-600"
+          >
+            {isEnabled ? <Eye size={14} /> : <EyeOff size={14} className="text-zinc-400" />}
+          </button>
+          <button
+            onClick={onToggleFavourite}
+            title={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
+            className="cursor-pointer transition-transform hover:scale-110"
+          >
+            <Star
+              size={16}
+              className={isFavourite ? 'fill-amber-400 text-amber-400' : 'text-zinc-200 hover:text-amber-300'}
+            />
+          </button>
+        </div>
       </div>
 
       <h3 className="font-bold text-zinc-900 text-sm leading-tight mb-1">{recipe.name}</h3>
@@ -154,23 +170,24 @@ function RecipeCard({
         </div>
       )}
 
-      {/* Edit / Delete row — only for custom */}
-      {isCustom && (
-        <div className="flex gap-2 mt-3 pt-3 border-t border-zinc-100">
-          <button
-            onClick={onEdit}
-            className="flex items-center gap-1.5 text-xs font-semibold text-zinc-600 hover:text-zinc-900 cursor-pointer transition-colors"
-          >
-            <Pencil size={12} /> Edit
-          </button>
+      {/* Edit / Delete row — edit shown for all, delete only for custom */}
+      <div className="flex gap-2 mt-3 pt-3 border-t border-zinc-100">
+        <button
+          onClick={onEdit}
+          className="flex items-center gap-1.5 text-xs font-semibold text-zinc-600 hover:text-zinc-900 cursor-pointer transition-colors"
+        >
+          {isCustom ? <Pencil size={12} /> : <Copy size={12} />}
+          {isCustom ? 'Edit' : 'Duplicate & edit'}
+        </button>
+        {isCustom && (
           <button
             onClick={onDelete}
             className="flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-red-500 cursor-pointer transition-colors ml-auto"
           >
             <Trash2 size={12} /> Delete
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
@@ -189,6 +206,7 @@ export default function RecipesView({ seedRecipes }: RecipesViewProps) {
   const {
     customRecipes, addRecipe, updateRecipe, deleteRecipe,
     favouriteIds, recipeNotes, toggleFavourite, setRecipeNote,
+    disabledBuiltinIds, toggleRecipeEnabled,
   } = useRecipeStore();
 
   const [activeTab,     setActiveTab]     = useState<Tab>('recipes');
@@ -198,12 +216,17 @@ export default function RecipesView({ seedRecipes }: RecipesViewProps) {
   const [filterFav,     setFilterFav]     = useState(false);
   const [filterCuisine, setFilterCuisine] = useState('All');
 
-  const openAdd  = () => { setEditingRecipe(undefined); setEditorOpen(true); };
-  const openEdit = (r: Recipe) => { setEditingRecipe(r); setEditorOpen(true); };
-  const closeEditor = () => { setEditorOpen(false); setEditingRecipe(undefined); };
+  const [duplicatingBuiltin, setDuplicatingBuiltin] = useState(false);
+
+  const openAdd  = () => { setEditingRecipe(undefined); setDuplicatingBuiltin(false); setEditorOpen(true); };
+  /** Open editor for a custom recipe (edit in place). */
+  const openEdit = (r: Recipe) => { setEditingRecipe(r); setDuplicatingBuiltin(false); setEditorOpen(true); };
+  /** Open editor pre-filled with a built-in recipe, but save as a new custom recipe. */
+  const openDuplicate = (r: Recipe) => { setEditingRecipe(r); setDuplicatingBuiltin(true); setEditorOpen(true); };
+  const closeEditor = () => { setEditorOpen(false); setEditingRecipe(undefined); setDuplicatingBuiltin(false); };
 
   const handleSave = (data: Omit<Recipe, 'id'>) => {
-    if (editingRecipe) updateRecipe(editingRecipe.id, data);
+    if (editingRecipe && !duplicatingBuiltin) updateRecipe(editingRecipe.id, data);
     else addRecipe(data);
     closeEditor();
   };
@@ -334,12 +357,14 @@ export default function RecipesView({ seedRecipes }: RecipesViewProps) {
                     key={r.id}
                     recipe={r}
                     isCustom
+                    isEnabled={r.enabled !== false}
                     isFavourite={favouriteIds.includes(r.id)}
                     note={recipeNotes[r.id] ?? ''}
                     onEdit={() => openEdit(r)}
                     onDelete={() => handleDelete(r.id)}
                     onToggleFavourite={() => toggleFavourite(r.id)}
                     onSaveNote={(n) => setRecipeNote(r.id, n)}
+                    onToggleEnabled={() => toggleRecipeEnabled(r.id, false)}
                   />
                 ))}
               </div>
@@ -375,10 +400,13 @@ export default function RecipesView({ seedRecipes }: RecipesViewProps) {
                     key={r.id}
                     recipe={r}
                     isCustom={false}
+                    isEnabled={!disabledBuiltinIds.includes(r.id)}
                     isFavourite={favouriteIds.includes(r.id)}
                     note={recipeNotes[r.id] ?? ''}
+                    onEdit={() => openDuplicate(r)}
                     onToggleFavourite={() => toggleFavourite(r.id)}
                     onSaveNote={(n) => setRecipeNote(r.id, n)}
+                    onToggleEnabled={() => toggleRecipeEnabled(r.id, true)}
                   />
                 ))}
               </div>
@@ -391,6 +419,7 @@ export default function RecipesView({ seedRecipes }: RecipesViewProps) {
       {editorOpen && (
         <RecipeEditor
           initial={editingRecipe}
+          isDuplicate={duplicatingBuiltin}
           onSave={handleSave}
           onCancel={closeEditor}
         />

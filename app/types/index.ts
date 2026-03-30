@@ -44,6 +44,7 @@ export interface Recipe {
   ingredients: Ingredient[];
   sourceUrl?: string;   // Link to the original recipe page
   youtubeUrl?: string;  // YouTube video URL (embedded in the recipe modal)
+  enabled?: boolean;    // false = disabled, excluded from auto-generation (default true)
 }
 
 /** Per-day wizard configuration: meal type + per-day filters + free-day metadata. */

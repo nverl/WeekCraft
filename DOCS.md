@@ -74,10 +74,11 @@ Settings
 - **Multi-week** — plans are saved per ISO week start date; navigate between weeks
 
 ### Calendar & Recipes
-- **7-day strip** — Monday–Sunday overview on the home screen
+- **Month calendar** — full month grid grouped by week; "This week" badge on current week row; planned weeks show recipe chips; unplanned rows show "Plan week" button
+- **Week detail view** — 7-day strip, active meal card, swap, people-per-day override, free-day, recipe modal, regenerate
 - **Meal cards** — show recipe name, label badge, calories, prep time
-- **Swap** — replace the recipe for a day with another matching-label recipe
-- **Recipe modal** — full recipe view:
+- **Swap** — replace the recipe for a day with another matching-label recipe (disabled recipes are included in swap pool)
+- **Recipe modal** — full recipe view rendered via React Portal (`createPortal` → `document.body`, `z-[200]`), covers header and bottom nav:
   - Ingredients scaled to the day's `people` count
   - Step-by-step instructions
   - Source URL (http/https only, `nofollow`)
@@ -91,6 +92,7 @@ Settings
 - Selected in wizard Step 2 with a quantity stepper (− N +)
 - In the week detail view: qty steppers + tap-to-expand ingredient list
 - Extras contribute to the shopping list, scaled by qty
+- **Built-in extras** cannot be edited in-place; use "Duplicate & edit" to create a custom copy
 
 ### Shopping List
 - Aggregates ingredients from all DayPlans + selected Extras for a week
@@ -98,14 +100,23 @@ Settings
 - Per-item: tick → moves to "In Pantry" section
 - Progress bar showing % checked
 - "Show staples" toggle — staples hidden by default
-- Filters to current + next 4 weeks; past weeks not shown
+- **Multi-week selector** — compact collapsible header; "N weeks" pill expands to show per-week toggles; `…` button expands action buttons (select all / clear)
+
+### Recipes
+- Browse seed recipes + custom recipes side by side
+- **Enable / disable built-in recipes** — disabled recipes are excluded from auto-generation (`enabled: false`); they remain available for manual swap; state persisted to localStorage via `disabledBuiltinIds[]` in `weekcraft-recipes-v1`
+- **Duplicate & edit built-in** — pre-fills editor with seed data; on save creates a new custom recipe (`addRecipe`), leaving the built-in unchanged
+- **Edit custom recipes** — full editor; saves via `PUT /api/user-recipes/[id]`
+- Favourite toggle (star) per recipe
+- Per-recipe notes (auto-saved)
+- Filter by cuisine, favourites, search
 
 ### User Accounts
 - Username + password auth (bcrypt hashed)
 - `defaultPeople` setting — wizard pre-fills people count from this on load
 - Custom recipes (CRUD) — appear alongside seed recipes in wizard
-- Custom extras (CRUD)
-- Custom ingredients (used when building custom recipes)
+- Custom extras (CRUD); built-ins support "Duplicate & edit"
+- Custom ingredients (used when building custom recipes); built-ins support "Duplicate" (copy with `(copy)` suffix)
 - Recipe favourites
 - Recipe notes (per recipe, stored server-side)
 
@@ -117,8 +128,17 @@ Settings
 - Household members **share the same WeekPlan** for that household — all members see and edit it
 - Owner can remove members; members can leave individual households independently
 - Owner can dissolve their household (cascades delete all members/invites/plans)
-- **Scope switcher**: a dropdown in the app header (`HouseholdSwitcher`) lets users switch between *Personal*, and each household they belong to — plans reload automatically
+- **Scope switcher (`HouseholdSwitcher`)**: always visible in the app header (even when no household exists); shows "Create a household" shortcut when user has no household; lets users switch between *Personal* and each household — plans reload automatically
 - Plans are stored in `householdStore.activeScope` (localStorage-persisted) and passed as `?scope=` to all plan API calls
+
+### Settings Page (section order)
+1. Default household size
+2. Username
+3. Password
+4. My household (create / manage)
+5. Joined households (leave)
+6. Sign out
+7. Danger zone (delete account)
 
 ### PWA
 - Registered as a Progressive Web App
