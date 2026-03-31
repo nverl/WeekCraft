@@ -8,7 +8,8 @@ import {
 import { useShoppingStore, type ExtraWithQty } from '@/app/store/shoppingStore';
 import { useWeekPlanStore } from '@/app/store/weekPlanStore';
 import { useExtrasStore } from '@/app/store/extrasStore';
-import { formatWeekRange } from '@/app/lib/weekUtils';
+import { formatWeekRange, getWeekStart, normalizeSelectedExtra } from '@/app/lib/weekUtils';
+import { downloadICS, buildPlainText } from '@/app/lib/ical';
 import type { ShoppingItem } from '@/app/types';
 
 // ── Aisle group ───────────────────────────────────────────────────────────────
@@ -78,40 +79,7 @@ function AisleGroup({ aisle, items, onToggle }: AisleGroupProps) {
   );
 }
 
-// ── ICS / Reminders export helpers ───────────────────────────────────────────
-
-interface ExportItem { name: string; scaledAmount: number; unit: string }
-
-function escapeIcal(str: string): string {
-  return str.replace(/[\\;,]/g, (c) => `\\${c}`).replace(/\n/g, '\\n');
-}
-
-function buildICS(items: ExportItem[]): string {
-  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
-  const todos = items.map((item) => {
-    const uid = Math.random().toString(36).slice(2, 10) + '@kitchenflow';
-    const title = escapeIcal(`${item.name} — ${item.scaledAmount} ${item.unit}`);
-    return ['BEGIN:VTODO', `UID:${uid}`, `DTSTAMP:${stamp}`, `SUMMARY:${title}`, 'END:VTODO'].join('\r\n');
-  });
-  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//KitchenFlow//Shopping List//EN', ...todos, 'END:VCALENDAR'].join('\r\n');
-}
-
-function downloadICS(items: ExportItem[]) {
-  const content = buildICS(items);
-  const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'shopping-list.ics';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-function buildPlainText(items: ExportItem[]): string {
-  return items.map((i) => `• ${i.name} — ${i.scaledAmount} ${i.unit}`).join('\n');
-}
+// ── ICS / Reminders export helpers live in app/lib/ical.ts ───────────────────
 
 // ── Main ShoppingList component ───────────────────────────────────────────────
 
@@ -125,14 +93,7 @@ export default function ShoppingList() {
   const [actionsExpanded, setActionsExpanded] = useState(false);
 
   // Only show current week + up to 4 future weeks (5 total); discard past weeks
-  const todayMonday = (() => {
-    const d = new Date();
-    const day = d.getDay(); // 0=Sun, 1=Mon, …
-    const diff = (day === 0 ? -6 : 1 - day); // shift to Monday
-    d.setDate(d.getDate() + diff);
-    d.setHours(0, 0, 0, 0);
-    return d.toISOString().slice(0, 10); // 'YYYY-MM-DD'
-  })();
+  const todayMonday = getWeekStart(new Date()).toISOString().slice(0, 10);
 
   const plannedWeekStarts = Object.keys(weeks)
     .sort()
@@ -152,9 +113,7 @@ export default function ShoppingList() {
     for (const ws of selectedWeeksForShopping) {
       if (!weeks[ws]) continue;
       for (const sel of weeks[ws].selectedExtras ?? []) {
-        // backward-compat: old data may be plain strings
-        const id = typeof sel === 'string' ? sel : sel.id;
-        const qty = typeof sel === 'string' ? 1 : sel.qty;
+        const { id, qty } = normalizeSelectedExtra(sel);
         qtyById.set(id, (qtyById.get(id) ?? 0) + qty);
       }
     }

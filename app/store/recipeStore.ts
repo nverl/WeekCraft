@@ -3,6 +3,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Recipe } from '@/app/types';
+import { useToastStore } from '@/app/store/toastStore';
+
+function toastError(msg: string) {
+  useToastStore.getState().addToast(msg, 'error');
+}
 
 interface RecipeStore {
   customRecipes: Recipe[];
@@ -41,7 +46,7 @@ export const useRecipeStore = create<RecipeStore>()(
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(recipe),
-        }).catch(console.error);
+        }).catch(() => toastError('Failed to save recipe. Check your connection.'));
         return recipe;
       },
 
@@ -53,7 +58,7 @@ export const useRecipeStore = create<RecipeStore>()(
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...data, id }),
-        }).catch(console.error);
+        }).catch(() => toastError('Failed to update recipe. Check your connection.'));
       },
 
       deleteRecipe: (id) => {
@@ -64,7 +69,7 @@ export const useRecipeStore = create<RecipeStore>()(
             Object.entries(state.recipeNotes).filter(([k]) => k !== id)
           ),
         }));
-        fetch(`/api/user-recipes/${id}`, { method: 'DELETE' }).catch(console.error);
+        fetch(`/api/user-recipes/${id}`, { method: 'DELETE' }).catch(() => toastError('Failed to delete recipe. Check your connection.'));
       },
 
       toggleFavourite: (id) => {
@@ -77,7 +82,7 @@ export const useRecipeStore = create<RecipeStore>()(
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ recipeId: id }),
-        }).catch(console.error);
+        }).catch(() => toastError('Failed to update favourites.'));
       },
 
       setRecipeNote: (id, note) => {
@@ -90,7 +95,7 @@ export const useRecipeStore = create<RecipeStore>()(
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ recipeId: id, note }),
-        }).catch(console.error);
+        }).catch(() => toastError('Failed to save note.'));
       },
 
       toggleRecipeEnabled: (id, isBuiltin) => {
@@ -112,7 +117,7 @@ export const useRecipeStore = create<RecipeStore>()(
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ ...recipe, enabled: !(recipe.enabled ?? true) }),
-            }).catch(console.error);
+            }).catch(() => toastError('Failed to update recipe.'));
           }
         }
       },

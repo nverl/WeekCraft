@@ -13,6 +13,7 @@ import ShoppingList from '@/app/components/shopping/ShoppingList';
 import RecipesView from '@/app/components/recipes/RecipesView';
 import DataLoader from '@/app/components/DataLoader';
 import HouseholdSwitcher from '@/app/components/HouseholdSwitcher';
+import Toast from '@/app/components/Toast';
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -94,6 +95,7 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
           onComplete={handleWizardComplete}
           onCancel={hasPlans ? handleWizardCancel : undefined}
         />
+        <Toast />
       </DataLoader>
     );
   }
@@ -159,6 +161,8 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
           {view === 'shopping' && <ShoppingList />}
           {view === 'recipes'  && <RecipesView seedRecipes={seedRecipes} />}
         </div>
+
+        <Toast />
 
         {/* Bottom nav */}
         <nav className="bg-white border-t border-zinc-200 px-4 py-2 flex-shrink-0">

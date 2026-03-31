@@ -3,7 +3,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { DayLabel, DayConfig, DayPlan, Recipe, Ingredient, WizardState, SelectedExtra } from '@/app/types';
-import { parseISOToMins, getNextMonday } from '@/app/lib/weekUtils';
+import { parseISOToMins, parseISODuration, getNextMonday } from '@/app/lib/weekUtils';
+
+// Re-export for any files that import parseISODuration from this module
+export { parseISODuration };
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -16,17 +19,6 @@ const DEFAULT_CONFIGS: DayConfig[] = [
   { label: 'cheat',    maxPrepMins: null, maxCalories: null, freeNote: '', freeCalories: null },
   { label: 'cheat',    maxPrepMins: null, maxCalories: null, freeNote: '', freeCalories: null },
 ];
-
-// Parse ISO 8601 duration to human-readable (e.g. PT30M -> "30 min")
-export function parseISODuration(iso: string): string {
-  const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
-  if (!match) return iso;
-  const hours = match[1] ? parseInt(match[1]) : 0;
-  const minutes = match[2] ? parseInt(match[2]) : 0;
-  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}min`;
-  if (hours > 0) return `${hours}h`;
-  return `${minutes} min`;
-}
 
 function scaleIngredients(ingredients: Ingredient[], people: number, recipeYield: number): Ingredient[] {
   const scale = people / recipeYield;

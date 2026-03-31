@@ -97,3 +97,28 @@ export function getNextMonday(): Date {
   monday.setHours(0, 0, 0, 0);
   return monday;
 }
+
+/**
+ * Parse ISO 8601 duration to a human-readable string.
+ * Examples: "PT30M" → "30 min", "PT1H30M" → "1h 30min", "PT2H" → "2h"
+ */
+export function parseISODuration(iso: string): string {
+  const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
+  if (!match) return iso;
+  const hours = match[1] ? parseInt(match[1]) : 0;
+  const minutes = match[2] ? parseInt(match[2]) : 0;
+  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}min`;
+  if (hours > 0) return `${hours}h`;
+  return `${minutes} min`;
+}
+
+import type { SelectedExtra } from '@/app/types';
+
+/**
+ * Normalise a SelectedExtra value that may be a legacy plain string (id only)
+ * or the current `{ id, qty }` object shape.
+ */
+export function normalizeSelectedExtra(sel: SelectedExtra | string): SelectedExtra {
+  if (typeof sel === 'string') return { id: sel, qty: 1 };
+  return sel;
+}

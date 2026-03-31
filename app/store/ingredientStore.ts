@@ -3,9 +3,14 @@
 import { create } from 'zustand';
 import type { IngredientEntry } from '@/app/types';
 import seedData from '@/data/ingredients.json';
+import { useToastStore } from '@/app/store/toastStore';
 
 const SEED_INGREDIENTS = seedData as IngredientEntry[];
 const SEED_IDS = new Set(SEED_INGREDIENTS.map((e) => e.id));
+
+function toastError(msg: string) {
+  useToastStore.getState().addToast(msg, 'error');
+}
 
 interface IngredientStore {
   ingredients: IngredientEntry[];
@@ -38,7 +43,7 @@ export const useIngredientStore = create<IngredientStore>()((set) => ({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(entry),
-    }).catch(console.error);
+    }).catch(() => toastError('Failed to save ingredient. Check your connection.'));
   },
 
   updateIngredient: (id, data) => {
@@ -49,11 +54,12 @@ export const useIngredientStore = create<IngredientStore>()((set) => ({
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
-    }).catch(console.error);
+    }).catch(() => toastError('Failed to update ingredient. Check your connection.'));
   },
 
   removeIngredient: (id) => {
     set((state) => ({ ingredients: state.ingredients.filter((e) => e.id !== id) }));
-    fetch(`/api/user-ingredients/${id}`, { method: 'DELETE' }).catch(console.error);
+    fetch(`/api/user-ingredients/${id}`, { method: 'DELETE' })
+      .catch(() => toastError('Failed to delete ingredient. Check your connection.'));
   },
 }));

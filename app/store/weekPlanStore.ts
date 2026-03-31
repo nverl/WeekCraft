@@ -3,6 +3,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { WeekPlan, SelectedExtra } from '@/app/types';
+import { normalizeSelectedExtra } from '@/app/lib/weekUtils';
+import { useToastStore } from '@/app/store/toastStore';
+
+function toastError(msg: string) {
+  useToastStore.getState().addToast(msg, 'error');
+}
 
 /** Returns the current active scope from householdStore without creating a React dependency. */
 function getActiveScope(): string {
@@ -65,7 +71,7 @@ export const useWeekPlanStore = create<WeekPlanStore>()(
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(plan),
-        }).catch(console.error);
+        }).catch(() => toastError('Failed to save plan. Check your connection.'));
       },
 
       deleteWeek: (weekStart) => {
@@ -81,7 +87,7 @@ export const useWeekPlanStore = create<WeekPlanStore>()(
         const scope = getActiveScope();
         fetch(`/api/plans/${encodeURIComponent(weekStart)}?scope=${encodeURIComponent(scope)}`, {
           method: 'DELETE',
-        }).catch(console.error);
+        }).catch(() => toastError('Failed to delete plan. Check your connection.'));
       },
 
       setActiveWeek: (weekStart) => set({ activeWeekStart: weekStart }),
@@ -103,9 +109,7 @@ export const useWeekPlanStore = create<WeekPlanStore>()(
         set((state) => {
           const week = state.weeks[weekStart];
           if (!week) return state;
-          const current: SelectedExtra[] = (week.selectedExtras ?? []).map((e) =>
-            typeof e === 'string' ? { id: e, qty: 1 } : e
-          );
+          const current: SelectedExtra[] = (week.selectedExtras ?? []).map(normalizeSelectedExtra);
           const exists = current.find((e) => e.id === extraId);
           const next = exists
             ? current.filter((e) => e.id !== extraId)
@@ -116,7 +120,7 @@ export const useWeekPlanStore = create<WeekPlanStore>()(
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updated),
-          }).catch(console.error);
+          }).catch(() => toastError('Failed to update extras. Check your connection.'));
           return { weeks: { ...state.weeks, [weekStart]: updated } };
         });
       },
@@ -125,9 +129,7 @@ export const useWeekPlanStore = create<WeekPlanStore>()(
         set((state) => {
           const week = state.weeks[weekStart];
           if (!week) return state;
-          const current: SelectedExtra[] = (week.selectedExtras ?? []).map((e) =>
-            typeof e === 'string' ? { id: e, qty: 1 } : e
-          );
+          const current: SelectedExtra[] = (week.selectedExtras ?? []).map(normalizeSelectedExtra);
           let next: SelectedExtra[];
           if (qty <= 0) {
             next = current.filter((e) => e.id !== extraId);
@@ -143,7 +145,7 @@ export const useWeekPlanStore = create<WeekPlanStore>()(
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updated),
-          }).catch(console.error);
+          }).catch(() => toastError('Failed to update extras. Check your connection.'));
           return { weeks: { ...state.weeks, [weekStart]: updated } };
         });
       },

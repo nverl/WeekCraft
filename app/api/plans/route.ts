@@ -1,40 +1,8 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { resolveScope } from '@/lib/auth-scope';
 import type { WeekPlan } from '@/app/types';
-
-/**
- * Resolve the plan scope from the ?scope= query param.
- * scope = 'personal' → user's own plans
- * scope = <householdId> → household plans (user must be owner or member)
- * Returns null if the user does not have access to the requested scope.
- */
-async function resolveScope(
-  userId: string,
-  scopeParam: string
-): Promise<
-  | { type: 'household'; householdId: string }
-  | { type: 'user'; userId: string }
-  | null
-> {
-  if (scopeParam === 'personal') return { type: 'user', userId };
-
-  // Validate ownership
-  const isOwner = await prisma.household.findFirst({
-    where: { id: scopeParam, ownerId: userId },
-    select: { id: true },
-  });
-  if (isOwner) return { type: 'household', householdId: scopeParam };
-
-  // Validate membership
-  const isMember = await prisma.householdMember.findFirst({
-    where: { userId, householdId: scopeParam },
-    select: { householdId: true },
-  });
-  if (isMember) return { type: 'household', householdId: scopeParam };
-
-  return null; // access denied
-}
 
 export async function GET(req: Request) {
   const session = await auth();

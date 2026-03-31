@@ -91,10 +91,14 @@ export default function DataLoader({ children }: { children: React.ReactNode }) 
     // Skip if not authenticated or initial load hasn't happened yet
     if (status !== 'authenticated' || !loaded.current) return;
 
+    const controller = new AbortController();
+
     async function reloadPlans() {
       resetHydration();
       try {
-        const res = await fetch(`/api/plans?scope=${encodeURIComponent(activeScope)}`);
+        const res = await fetch(`/api/plans?scope=${encodeURIComponent(activeScope)}`, {
+          signal: controller.signal,
+        });
         if (!res.ok) {
           hydrateWeeks([]);
           return;
@@ -102,12 +106,14 @@ export default function DataLoader({ children }: { children: React.ReactNode }) 
         const plans: WeekPlan[] = await res.json();
         hydrateWeeks(Array.isArray(plans) ? plans : []);
       } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
         console.error('[DataLoader] Failed to reload plans:', err);
         hydrateWeeks([]);
       }
     }
 
     reloadPlans();
+    return () => controller.abort();
   }, [activeScope]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return <>{children}</>;

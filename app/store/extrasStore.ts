@@ -3,9 +3,14 @@
 import { create } from 'zustand';
 import type { Extra, ExtraCategory, Ingredient } from '@/app/types';
 import seedData from '@/data/extras.json';
+import { useToastStore } from '@/app/store/toastStore';
 
 const SEED_EXTRAS = seedData as Extra[];
 const SEED_IDS = new Set(SEED_EXTRAS.map((e) => e.id));
+
+function toastError(msg: string) {
+  useToastStore.getState().addToast(msg, 'error');
+}
 
 interface ExtrasStore {
   extras: Extra[];
@@ -23,9 +28,7 @@ export const useExtrasStore = create<ExtrasStore>()((set, get) => ({
 
   hydrate: (userExtras) => {
     const userById = new Map(userExtras.map((e) => [e.id, e]));
-    // Seed extras: use user's edited version if they customized it
     const resolved = SEED_EXTRAS.map((seed) => userById.get(seed.id) ?? seed);
-    // Truly new extras not in seed
     const custom = userExtras.filter((e) => !SEED_IDS.has(e.id));
     set({ extras: [...resolved, ...custom], hydrated: true });
   },
@@ -40,7 +43,7 @@ export const useExtrasStore = create<ExtrasStore>()((set, get) => ({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(extra),
-    }).catch(console.error);
+    }).catch(() => toastError('Failed to save extra. Check your connection.'));
   },
 
   updateExtra: (id, data) => {
@@ -53,12 +56,13 @@ export const useExtrasStore = create<ExtrasStore>()((set, get) => ({
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...updated, ...data, isCustom: true }),
-      }).catch(console.error);
+      }).catch(() => toastError('Failed to update extra. Check your connection.'));
     }
   },
 
   removeExtra: (id) => {
     set((state) => ({ extras: state.extras.filter((e) => e.id !== id) }));
-    fetch(`/api/user-extras/${id}`, { method: 'DELETE' }).catch(console.error);
+    fetch(`/api/user-extras/${id}`, { method: 'DELETE' })
+      .catch(() => toastError('Failed to delete extra. Check your connection.'));
   },
 }));

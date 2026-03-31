@@ -1,31 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-
-async function resolveScope(
-  userId: string,
-  scopeParam: string
-): Promise<
-  | { type: 'household'; householdId: string }
-  | { type: 'user'; userId: string }
-  | null
-> {
-  if (scopeParam === 'personal') return { type: 'user', userId };
-
-  const isOwner = await prisma.household.findFirst({
-    where: { id: scopeParam, ownerId: userId },
-    select: { id: true },
-  });
-  if (isOwner) return { type: 'household', householdId: scopeParam };
-
-  const isMember = await prisma.householdMember.findFirst({
-    where: { userId, householdId: scopeParam },
-    select: { householdId: true },
-  });
-  if (isMember) return { type: 'household', householdId: scopeParam };
-
-  return null;
-}
+import { resolveScope } from '@/lib/auth-scope';
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ weekStart: string }> }) {
   const session = await auth();
