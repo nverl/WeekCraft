@@ -213,7 +213,7 @@ interface WeekDetailViewProps {
 export default function WeekDetailView({ weekPlan, recipes }: WeekDetailViewProps) {
   const { plan, people, setPlan, markAsFreeDay, assignRecipeToDay, setDayPeople } = useWizardStore();
   const { weeks, saveWeek, setActiveWeek, openWizardForWeek, toggleExtraForWeek, setExtraQtyForWeek } = useWeekPlanStore();
-  const { extras, addExtra } = useExtrasStore();
+  const { extras, hiddenExtraIds, addExtra } = useExtrasStore();
   const [modalDayIndex, setModalDayIndex] = useState<number | null>(null);
   const [expandedDayIndex, setExpandedDayIndex] = useState<number | null>(null);
   const [showExtrasPicker, setShowExtrasPicker] = useState(false);
@@ -242,6 +242,10 @@ export default function WeekDetailView({ weekPlan, recipes }: WeekDetailViewProp
 
   const days = plan.length > 0 ? plan : weekPlan.days;
   if (days.length === 0) return null;
+
+  // Filter out hidden/disabled recipes and extras before passing to pickers
+  const visibleRecipes = recipes.filter((r) => r.enabled !== false);
+  const visibleExtras  = extras.filter((e) => !hiddenExtraIds.includes(e.id));
 
   // IDs of recipes already assigned this week — for "This week" badge in picker
   const usedThisWeek = new Set(days.filter((d) => d.recipe).map((d) => d.recipe!.id));
@@ -331,7 +335,7 @@ export default function WeekDetailView({ weekPlan, recipes }: WeekDetailViewProp
                 isExpanded={expandedDayIndex === i}
                 onToggleExpanded={() => setExpandedDayIndex(expandedDayIndex === i ? null : i)}
                 people={people}
-                recipes={recipes}
+                recipes={visibleRecipes}
                 usedIds={usedThisWeek}
                 onOpenRecipe={() => setModalDayIndex(i)}
                 onMarkFree={() => { markAsFreeDay(i, '', null); setExpandedDayIndex(null); }}
@@ -458,7 +462,7 @@ export default function WeekDetailView({ weekPlan, recipes }: WeekDetailViewProp
       {/* Extras picker modal */}
       {showExtrasPicker && (
         <ExtraPickerModal
-          extras={extras}
+          extras={visibleExtras}
           selectedIds={selectedExtraIds}
           onToggle={(extra) => toggleExtraForWeek(weekPlan.weekStart, extra.id)}
           onAddCustom={(data) => addExtra(data)}
