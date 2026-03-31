@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import {
   Plus, Clock, Flame, Leaf, Zap, Pencil, Trash2, Lock,
-  Link, Youtube, Star, Search, X, StickyNote, Dumbbell, Shuffle, Copy, EyeOff, Eye,
+  Link, Youtube, Star, Search, X, StickyNote, Dumbbell, Shuffle, Copy, EyeOff, Eye, ChevronDown,
 } from 'lucide-react';
 import { parseISODuration } from '@/app/store/wizardStore';
 import { useRecipeStore } from '@/app/store/recipeStore';
@@ -235,19 +235,28 @@ export default function RecipesView({ seedRecipes }: RecipesViewProps) {
     if (confirm('Delete this recipe?')) deleteRecipe(id);
   };
 
-  // Derived: all available cuisines across both lists
-  const allRecipes = [...customRecipes, ...seedRecipes];
+  const [hiddenExpanded, setHiddenExpanded] = useState(false);
+
+  // Separate enabled vs disabled before filtering
+  const enabledCustom  = customRecipes.filter((r) => r.enabled !== false);
+  const disabledCustom = customRecipes.filter((r) => r.enabled === false);
+  const enabledSeed    = seedRecipes.filter((r) => !disabledBuiltinIds.includes(r.id));
+  const disabledSeed   = seedRecipes.filter((r) => disabledBuiltinIds.includes(r.id));
+  const hiddenRecipes  = [...disabledCustom, ...disabledSeed];
+
+  // Derived: cuisines from visible recipes only
+  const allRecipes = [...enabledCustom, ...enabledSeed];
   const cuisines   = ['All', ...Array.from(new Set(allRecipes.map((r) => r.cuisine).filter((c): c is string => Boolean(c)))).sort()];
 
-  // Filter function
+  // Filter function (applies to enabled lists only)
   const applyFilters = (list: Recipe[]) =>
     list
       .filter((r) => !filterFav || favouriteIds.includes(r.id))
       .filter((r) => filterCuisine === 'All' || r.cuisine === filterCuisine)
       .filter((r) => !search.trim() || r.name.toLowerCase().includes(search.trim().toLowerCase()));
 
-  const filteredCustom = applyFilters(customRecipes);
-  const filteredSeed   = applyFilters(seedRecipes);
+  const filteredCustom = applyFilters(enabledCustom);
+  const filteredSeed   = applyFilters(enabledSeed);
   const hasResults     = filteredCustom.length + filteredSeed.length > 0;
   const isFiltered     = !!(search.trim() || filterFav || filterCuisine !== 'All');
 
@@ -371,8 +380,8 @@ export default function RecipesView({ seedRecipes }: RecipesViewProps) {
             </section>
           )}
 
-          {/* Empty state when no custom recipes and no active filter */}
-          {customRecipes.length === 0 && !isFiltered && (
+          {/* Empty state when no enabled custom recipes and no active filter */}
+          {enabledCustom.length === 0 && !isFiltered && (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <div className="w-12 h-12 rounded-2xl bg-zinc-100 flex items-center justify-center mb-3">
                 <Plus size={20} className="text-zinc-400" />
@@ -400,7 +409,7 @@ export default function RecipesView({ seedRecipes }: RecipesViewProps) {
                     key={r.id}
                     recipe={r}
                     isCustom={false}
-                    isEnabled={!disabledBuiltinIds.includes(r.id)}
+                    isEnabled={true}
                     isFavourite={favouriteIds.includes(r.id)}
                     note={recipeNotes[r.id] ?? ''}
                     onEdit={() => openDuplicate(r)}
@@ -410,6 +419,42 @@ export default function RecipesView({ seedRecipes }: RecipesViewProps) {
                   />
                 ))}
               </div>
+            </section>
+          )}
+
+          {/* Hidden recipes */}
+          {hiddenRecipes.length > 0 && (
+            <section>
+              <button
+                onClick={() => setHiddenExpanded((v) => !v)}
+                className="flex items-center gap-2 text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 cursor-pointer hover:text-zinc-600 transition-colors"
+              >
+                <EyeOff size={12} />
+                Hidden ({hiddenRecipes.length})
+                <ChevronDown size={12} className={`transition-transform ${hiddenExpanded ? 'rotate-180' : ''}`} />
+              </button>
+              {hiddenExpanded && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {hiddenRecipes.map((r) => {
+                    const isBuiltin = !customRecipes.find((cr) => cr.id === r.id);
+                    return (
+                      <RecipeCard
+                        key={r.id}
+                        recipe={r}
+                        isCustom={!isBuiltin}
+                        isEnabled={false}
+                        isFavourite={favouriteIds.includes(r.id)}
+                        note={recipeNotes[r.id] ?? ''}
+                        onEdit={() => isBuiltin ? openDuplicate(r) : openEdit(r)}
+                        onDelete={isBuiltin ? undefined : () => handleDelete(r.id)}
+                        onToggleFavourite={() => toggleFavourite(r.id)}
+                        onSaveNote={(n) => setRecipeNote(r.id, n)}
+                        onToggleEnabled={() => toggleRecipeEnabled(r.id, isBuiltin)}
+                      />
+                    );
+                  })}
+                </div>
+              )}
             </section>
           )}
         </div>

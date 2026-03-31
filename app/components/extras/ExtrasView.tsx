@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, Lock, ShoppingBag, Copy } from 'lucide-react';
+import { Plus, Pencil, Trash2, Lock, ShoppingBag, Copy, EyeOff, Eye, ChevronDown } from 'lucide-react';
 import { useExtrasStore } from '@/app/store/extrasStore';
 import ExtraEditor from './ExtraEditor';
 import type { Extra, ExtraCategory } from '@/app/types';
@@ -19,17 +19,19 @@ const CAT_COLOR: Record<ExtraCategory, { bg: string; text: string; label: string
 
 interface ExtraCardProps {
   extra: Extra;
+  isHidden?: boolean;
   onEdit: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  onToggleHidden: () => void;
 }
 
-function ExtraCard({ extra, onEdit, onDuplicate, onDelete }: ExtraCardProps) {
+function ExtraCard({ extra, isHidden, onEdit, onDuplicate, onDelete, onToggleHidden }: ExtraCardProps) {
   const cat = CAT_COLOR[extra.category];
   const nonStaple = extra.ingredients.filter((i) => !i.isStaple);
 
   return (
-    <div className="bg-white border border-zinc-200 rounded-2xl p-4 hover:border-zinc-300 transition-colors">
+    <div className={`bg-white border rounded-2xl p-4 transition-colors ${isHidden ? 'border-zinc-100 opacity-60' : 'border-zinc-200 hover:border-zinc-300'}`}>
       {/* Top row: emoji + name + badges */}
       <div className="flex items-start gap-3 mb-3">
         <span className="text-2xl flex-shrink-0 leading-none mt-0.5">{extra.emoji}</span>
@@ -66,7 +68,14 @@ function ExtraCard({ extra, onEdit, onDuplicate, onDelete }: ExtraCardProps) {
         <p className="text-xs text-zinc-400">
           {nonStaple.length} item{nonStaple.length !== 1 ? 's' : ''}
         </p>
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center">
+          <button
+            onClick={onToggleHidden}
+            title={isHidden ? 'Show in wizard & planning' : 'Hide from wizard & planning'}
+            className="text-zinc-300 hover:text-zinc-600 cursor-pointer transition-colors"
+          >
+            {isHidden ? <Eye size={13} /> : <EyeOff size={13} />}
+          </button>
           {extra.isCustom ? (
             <button
               onClick={onEdit}
@@ -99,12 +108,12 @@ function ExtraCard({ extra, onEdit, onDuplicate, onDelete }: ExtraCardProps) {
 // ── Main view ─────────────────────────────────────────────────────────────────
 
 export default function ExtrasView() {
-  const { extras, addExtra, updateExtra, removeExtra } = useExtrasStore();
+  const { extras, hiddenExtraIds, addExtra, updateExtra, removeExtra, toggleExtraHidden } = useExtrasStore();
 
   const [editorOpen, setEditorOpen]   = useState(false);
   const [editingExtra, setEditingExtra] = useState<Extra | undefined>(undefined);
-
   const [duplicating, setDuplicating] = useState(false);
+  const [hiddenExpanded, setHiddenExpanded] = useState(false);
 
   const openAdd  = () => { setEditingExtra(undefined); setDuplicating(false); setEditorOpen(true); };
   const openEdit = (e: Extra) => { setEditingExtra(e); setDuplicating(false); setEditorOpen(true); };
@@ -125,8 +134,11 @@ export default function ExtrasView() {
     if (confirm('Delete this extra?')) removeExtra(id);
   };
 
-  const customExtras = extras.filter((e) => e.isCustom);
-  const seedExtras   = extras.filter((e) => !e.isCustom);
+  const isHidden = (id: string) => hiddenExtraIds.includes(id);
+
+  const customExtras = extras.filter((e) => e.isCustom && !isHidden(e.id));
+  const seedExtras   = extras.filter((e) => !e.isCustom && !isHidden(e.id));
+  const hiddenExtras = extras.filter((e) => isHidden(e.id));
 
   return (
     <div className="flex flex-col h-full bg-zinc-50">
@@ -136,6 +148,7 @@ export default function ExtrasView() {
           <h2 className="text-lg font-black text-zinc-900">Extras</h2>
           <p className="text-xs text-zinc-400 mt-0.5">
             {customExtras.length} custom · {seedExtras.length} built-in
+            {hiddenExtras.length > 0 && ` · ${hiddenExtras.length} hidden`}
           </p>
         </div>
         <button
@@ -164,6 +177,7 @@ export default function ExtrasView() {
                     onEdit={() => openEdit(e)}
                     onDuplicate={() => openDuplicate(e)}
                     onDelete={() => handleDelete(e.id)}
+                    onToggleHidden={() => toggleExtraHidden(e.id)}
                   />
                 ))}
               </div>
@@ -201,10 +215,40 @@ export default function ExtrasView() {
                   onEdit={() => openEdit(e)}
                   onDuplicate={() => openDuplicate(e)}
                   onDelete={() => handleDelete(e.id)}
+                  onToggleHidden={() => toggleExtraHidden(e.id)}
                 />
               ))}
             </div>
           </section>
+
+          {/* Hidden extras */}
+          {hiddenExtras.length > 0 && (
+            <section>
+              <button
+                onClick={() => setHiddenExpanded((v) => !v)}
+                className="flex items-center gap-2 text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 cursor-pointer hover:text-zinc-600 transition-colors"
+              >
+                <EyeOff size={12} />
+                Hidden ({hiddenExtras.length})
+                <ChevronDown size={12} className={`transition-transform ${hiddenExpanded ? 'rotate-180' : ''}`} />
+              </button>
+              {hiddenExpanded && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {hiddenExtras.map((e) => (
+                    <ExtraCard
+                      key={e.id}
+                      extra={e}
+                      isHidden
+                      onEdit={() => openEdit(e)}
+                      onDuplicate={() => openDuplicate(e)}
+                      onDelete={() => handleDelete(e.id)}
+                      onToggleHidden={() => toggleExtraHidden(e.id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
         </div>
       </div>
 

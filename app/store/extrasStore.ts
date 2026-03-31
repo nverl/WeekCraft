@@ -1,6 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { Extra, ExtraCategory, Ingredient } from '@/app/types';
 import seedData from '@/data/extras.json';
 import { useToastStore } from '@/app/store/toastStore';
@@ -14,16 +15,21 @@ function toastError(msg: string) {
 
 interface ExtrasStore {
   extras: Extra[];
+  hiddenExtraIds: string[];
   hydrated: boolean;
 
   hydrate: (userExtras: Extra[]) => void;
   addExtra: (data: { name: string; emoji: string; category: ExtraCategory; ingredients?: Ingredient[] }) => void;
   updateExtra: (id: string, data: Partial<Omit<Extra, 'id'>>) => void;
   removeExtra: (id: string) => void;
+  toggleExtraHidden: (id: string) => void;
 }
 
-export const useExtrasStore = create<ExtrasStore>()((set, get) => ({
+export const useExtrasStore = create<ExtrasStore>()(
+  persist(
+  (set, get) => ({
   extras: SEED_EXTRAS,
+  hiddenExtraIds: [],
   hydrated: false,
 
   hydrate: (userExtras) => {
@@ -61,8 +67,24 @@ export const useExtrasStore = create<ExtrasStore>()((set, get) => ({
   },
 
   removeExtra: (id) => {
-    set((state) => ({ extras: state.extras.filter((e) => e.id !== id) }));
+    set((state) => ({
+      extras: state.extras.filter((e) => e.id !== id),
+      hiddenExtraIds: state.hiddenExtraIds.filter((hid) => hid !== id),
+    }));
     fetch(`/api/user-extras/${id}`, { method: 'DELETE' })
       .catch(() => toastError('Failed to delete extra. Check your connection.'));
   },
-}));
+
+  toggleExtraHidden: (id) => {
+    set((state) => ({
+      hiddenExtraIds: state.hiddenExtraIds.includes(id)
+        ? state.hiddenExtraIds.filter((hid) => hid !== id)
+        : [...state.hiddenExtraIds, id],
+    }));
+  },
+  }),
+  {
+    name: 'weekcraft-extras-v1',
+    partialize: (state) => ({ hiddenExtraIds: state.hiddenExtraIds }),
+  }
+));

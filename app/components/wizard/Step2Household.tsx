@@ -44,7 +44,8 @@ function QtyStepper({ qty, onChange, min = 0, max = 20 }: QtyStepperProps) {
 
 export default function Step2WeeklyExtras() {
   const { selectedExtras, setWizardExtraQty } = useWizardStore();
-  const { extras } = useExtrasStore();
+  const { extras, hiddenExtraIds } = useExtrasStore();
+  const visibleExtras = extras.filter((e) => !hiddenExtraIds.includes(e.id));
   const [openIngId, setOpenIngId] = useState<string | null>(null);
 
   const totalSelected = selectedExtras.length;
@@ -60,7 +61,7 @@ export default function Step2WeeklyExtras() {
       </p>
 
       <div className="flex flex-col gap-3">
-        {extras.map((extra) => {
+        {visibleExtras.map((extra) => {
           const qty = getQty(extra.id);
           const selected = qty > 0;
 
@@ -145,7 +146,7 @@ export default function Step2WeeklyExtras() {
           <ShoppingBag size={15} className="flex-shrink-0" />
           <p className="text-sm font-semibold">
             {selectedExtras.map((e) => {
-              const extra = extras.find((x) => x.id === e.id);
+              const extra = visibleExtras.find((x) => x.id === e.id);
               return extra ? `${e.qty}× ${extra.name}` : null;
             }).filter(Boolean).join(' · ')}
           </p>

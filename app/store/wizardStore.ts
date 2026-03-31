@@ -184,9 +184,9 @@ export const useWizardStore = create<WizardStore>()(
           const current = plan[dayIndex];
           if (!current || current.label === 'none' || !current.recipe) return state;
 
-          // Disabled recipes can still be chosen when swapping (user explicitly picks them)
+          // Exclude hidden (disabled) recipes from swap pool
           const matching = recipes.filter(
-            (r) => r.labels.includes(current.label as DayLabel) && r.id !== current.recipe!.id
+            (r) => r.enabled !== false && r.labels.includes(current.label as DayLabel) && r.id !== current.recipe!.id
           );
           if (matching.length === 0) return state;
 
