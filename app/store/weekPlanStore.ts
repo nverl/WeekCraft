@@ -31,7 +31,6 @@ interface WeekPlanStore {
   activeWeekStart: string | null;
   wizardOpen: boolean;
   wizardTargetWeek: string | null;
-  selectedWeeksForShopping: string[];
 
   hydrate: (plans: WeekPlan[]) => void;
   resetHydration: () => void;
@@ -40,8 +39,6 @@ interface WeekPlanStore {
   setActiveWeek: (weekStart: string | null) => void;
   openWizardForWeek: (weekStart: string | null) => void;
   closeWizard: () => void;
-  toggleWeekForShopping: (weekStart: string) => void;
-  setAllWeeksForShopping: (weekStarts: string[]) => void;
   toggleExtraForWeek: (weekStart: string, extraId: string) => void;
   setExtraQtyForWeek: (weekStart: string, extraId: string, qty: number) => void;
 }
@@ -54,7 +51,6 @@ export const useWeekPlanStore = create<WeekPlanStore>()(
       activeWeekStart: null,
       wizardOpen: false,
       wizardTargetWeek: null,
-      selectedWeeksForShopping: [],
 
       hydrate: (plans) =>
         set({
@@ -80,7 +76,6 @@ export const useWeekPlanStore = create<WeekPlanStore>()(
           delete weeks[weekStart];
           return {
             weeks,
-            selectedWeeksForShopping: state.selectedWeeksForShopping.filter((w) => w !== weekStart),
             activeWeekStart: state.activeWeekStart === weekStart ? null : state.activeWeekStart,
           };
         });
@@ -93,17 +88,6 @@ export const useWeekPlanStore = create<WeekPlanStore>()(
       setActiveWeek: (weekStart) => set({ activeWeekStart: weekStart }),
       openWizardForWeek: (weekStart) => set({ wizardOpen: true, wizardTargetWeek: weekStart }),
       closeWizard: () => set({ wizardOpen: false, wizardTargetWeek: null }),
-
-      toggleWeekForShopping: (weekStart) =>
-        set((state) => {
-          const selected = state.selectedWeeksForShopping;
-          const next = selected.includes(weekStart)
-            ? selected.filter((w) => w !== weekStart)
-            : [...selected, weekStart];
-          return { selectedWeeksForShopping: next };
-        }),
-
-      setAllWeeksForShopping: (weekStarts) => set({ selectedWeeksForShopping: weekStarts }),
 
       toggleExtraForWeek: (weekStart, extraId) => {
         set((state) => {
@@ -155,7 +139,6 @@ export const useWeekPlanStore = create<WeekPlanStore>()(
       // Only persist UI state — actual plan data comes from the DB
       partialize: (state) => ({
         activeWeekStart: state.activeWeekStart,
-        selectedWeeksForShopping: state.selectedWeeksForShopping,
       }),
     }
   )

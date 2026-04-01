@@ -125,6 +125,7 @@ model ShoppingCustomItem {
   householdId String?
   household   Household? @relation(fields: [householdId], references: [id], onDelete: Cascade)
   name        String
+  weekStart   String     // ISO Monday date for which week this item belongs to
   inCart      Boolean    @default(false)
   createdAt   DateTime   @default(now())
 }

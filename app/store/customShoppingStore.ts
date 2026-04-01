@@ -5,44 +5,51 @@ import type { CustomShoppingItem } from '@/app/types';
 
 interface CustomShoppingStore {
   items: CustomShoppingItem[];
+  loadedWeek: string | null;  // which week the current items belong to
   loading: boolean;
 
-  /** Load items from the server for the given scope. */
-  loadItems: (scope: string) => Promise<void>;
-  /** Add an item — no-op if name already exists (case-insensitive). Returns the item. */
-  addItem: (name: string, scope: string) => Promise<CustomShoppingItem | null>;
+  /** Load items for a specific week and scope. */
+  loadItems: (scope: string, weekStart: string) => Promise<void>;
+  /** Add an item — no-op if name already exists for this week (case-insensitive). */
+  addItem: (name: string, scope: string, weekStart: string) => Promise<CustomShoppingItem | null>;
   /** Toggle inCart state. */
   toggleItem: (id: string, inCart: boolean, scope: string) => Promise<void>;
   /** Remove an item. */
   removeItem: (id: string, scope: string) => Promise<void>;
-  /** Clear all items from store (called on scope switch before reload). */
+  /** Clear items (called when switching weeks or scope). */
   clearItems: () => void;
+}
+
+function url(scope: string, weekStart?: string) {
+  const params = new URLSearchParams({ scope });
+  if (weekStart) params.set('weekStart', weekStart);
+  return `/api/shopping/custom?${params}`;
 }
 
 export const useCustomShoppingStore = create<CustomShoppingStore>((set, get) => ({
   items: [],
+  loadedWeek: null,
   loading: false,
 
-  loadItems: async (scope) => {
+  loadItems: async (scope, weekStart) => {
     set({ loading: true });
     try {
-      const res = await fetch(`/api/shopping/custom?scope=${encodeURIComponent(scope)}`);
+      const res = await fetch(url(scope, weekStart));
       if (res.ok) {
         const items: CustomShoppingItem[] = await res.json();
-        set({ items });
+        set({ items, loadedWeek: weekStart });
       }
     } finally {
       set({ loading: false });
     }
   },
 
-  addItem: async (name, scope) => {
-    // Optimistic duplicate check
+  addItem: async (name, scope, weekStart) => {
     const nameLower = name.trim().toLowerCase();
     const exists = get().items.find((i) => i.name.toLowerCase() === nameLower);
     if (exists) return exists;
 
-    const res = await fetch(`/api/shopping/custom?scope=${encodeURIComponent(scope)}`, {
+    const res = await fetch(url(scope, weekStart), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: name.trim() }),
@@ -58,11 +65,10 @@ export const useCustomShoppingStore = create<CustomShoppingStore>((set, get) => 
   },
 
   toggleItem: async (id, inCart, scope) => {
-    // Optimistic update
     set((state) => ({
       items: state.items.map((i) => (i.id === id ? { ...i, inCart } : i)),
     }));
-    await fetch(`/api/shopping/custom?scope=${encodeURIComponent(scope)}`, {
+    await fetch(url(scope), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, inCart }),
@@ -70,14 +76,13 @@ export const useCustomShoppingStore = create<CustomShoppingStore>((set, get) => 
   },
 
   removeItem: async (id, scope) => {
-    // Optimistic update
     set((state) => ({ items: state.items.filter((i) => i.id !== id) }));
-    await fetch(`/api/shopping/custom?scope=${encodeURIComponent(scope)}`, {
+    await fetch(url(scope), {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
     });
   },
 
-  clearItems: () => set({ items: [] }),
+  clearItems: () => set({ items: [], loadedWeek: null }),
 }));

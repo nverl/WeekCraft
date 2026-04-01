@@ -38,7 +38,6 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
   const {
     weeks, wizardOpen, activeWeekStart, hydrated,
     saveWeek, closeWizard, openWizardForWeek,
-    toggleWeekForShopping, selectedWeeksForShopping,
     setActiveWeek,
   } = useWeekPlanStore();
   const { customRecipes, disabledBuiltinIds } = useRecipeStore();
@@ -64,10 +63,6 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
       days: plan,
       selectedExtras: [...selectedExtras],
     });
-
-    if (!selectedWeeksForShopping.includes(effectiveWeekStart)) {
-      toggleWeekForShopping(effectiveWeekStart);
-    }
 
     closeWizard();
     setView('home');

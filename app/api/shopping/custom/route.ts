@@ -15,11 +15,14 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const scopeParam = searchParams.get('scope') ?? 'personal';
+  const weekStart = searchParams.get('weekStart');
+  if (!weekStart) return NextResponse.json({ error: 'weekStart required' }, { status: 400 });
+
   const scope = await resolveScope(session.user.id, scopeParam);
   if (!scope) return NextResponse.json({ error: 'Access denied' }, { status: 403 });
 
   const items = await prisma.shoppingCustomItem.findMany({
-    where: scopeWhere(scope),
+    where: { ...scopeWhere(scope), weekStart },
     orderBy: { createdAt: 'asc' },
     select: { id: true, name: true, inCart: true },
   });
@@ -33,20 +36,27 @@ export async function POST(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const scopeParam = searchParams.get('scope') ?? 'personal';
+  const weekStart = searchParams.get('weekStart');
+  if (!weekStart) return NextResponse.json({ error: 'weekStart required' }, { status: 400 });
+
   const scope = await resolveScope(session.user.id, scopeParam);
   if (!scope) return NextResponse.json({ error: 'Access denied' }, { status: 403 });
 
   const { name } = await req.json();
   if (!name?.trim()) return NextResponse.json({ error: 'Name required' }, { status: 400 });
 
-  // Prevent duplicates (case-insensitive)
+  // Prevent duplicates (case-insensitive, within same week)
   const existing = await prisma.shoppingCustomItem.findFirst({
-    where: { ...scopeWhere(scope), name: { equals: name.trim(), mode: 'insensitive' } },
+    where: {
+      ...scopeWhere(scope),
+      weekStart,
+      name: { equals: name.trim(), mode: 'insensitive' },
+    },
   });
   if (existing) return NextResponse.json(existing);
 
   const item = await prisma.shoppingCustomItem.create({
-    data: { ...scopeWhere(scope), name: name.trim() },
+    data: { ...scopeWhere(scope), weekStart, name: name.trim() },
     select: { id: true, name: true, inCart: true },
   });
 
@@ -65,12 +75,12 @@ export async function PATCH(req: Request) {
   const { id, inCart } = await req.json();
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
-  const item = await prisma.shoppingCustomItem.updateMany({
+  await prisma.shoppingCustomItem.updateMany({
     where: { id, ...scopeWhere(scope) },
     data: { inCart },
   });
 
-  return NextResponse.json({ ok: true, count: item.count });
+  return NextResponse.json({ ok: true });
 }
 
 export async function DELETE(req: Request) {
