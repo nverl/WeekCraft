@@ -227,13 +227,20 @@ export default function ShoppingList() {
                   <ListTodo size={12} />
                   Reminders
                 </button>
-                <button
-                  onClick={handleCopy}
-                  className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400 transition-all cursor-pointer"
-                >
-                  {copied ? <CheckCheck size={12} className="text-emerald-500" /> : <Copy size={12} />}
-                  {copied ? 'Copied!' : 'Copy'}
-                </button>
+                <div className="flex flex-col gap-1">
+                  <button
+                    onClick={handleCopy}
+                    className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400 transition-all cursor-pointer"
+                  >
+                    {copied ? <CheckCheck size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                    {copied ? 'Copied!' : 'Copy list'}
+                  </button>
+                  {copied && (
+                    <p className="text-[10px] text-zinc-400 leading-tight px-1">
+                      Open Reminders → tap a list → paste
+                    </p>
+                  )}
+                </div>
               </>
             )}
             <button

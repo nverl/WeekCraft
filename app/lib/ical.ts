@@ -26,9 +26,11 @@ export function buildICS(items: IcalItem[]): string {
   ].join('\r\n');
 }
 
-/** Build a plain-text shopping list (for clipboard copy). */
+/** Build a plain-text shopping list for clipboard copy.
+ *  One item per line, no bullet characters — paste directly into iOS Reminders
+ *  (in list view, not inside an item) to create one reminder per line. */
 export function buildPlainText(items: IcalItem[]): string {
-  return items.map((i) => `• ${i.name} — ${i.scaledAmount} ${i.unit}`).join('\n');
+  return items.map((i) => `${i.name} — ${i.scaledAmount} ${i.unit}`).join('\n');
 }
 
 /** Trigger a browser download of an ICS file. */
