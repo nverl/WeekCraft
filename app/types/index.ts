@@ -88,12 +88,22 @@ export interface IngredientEntry {
 
 // ─── Multi-week planning ──────────────────────────────────────────────────────
 
+/** An ingredient manually added to the shopping list for a specific week. */
+export interface ExtraShoppingIngredient {
+  id: string;       // client-generated uuid
+  name: string;
+  amount: number;
+  unit: string;
+  aisle: string;
+}
+
 export interface WeekPlan {
   weekStart: string;       // ISO string of Monday 00:00:00 UTC
   dayConfigs: DayConfig[]; // per-day config (replaces legacy dayLabels)
   people: number;
   days: DayPlan[];         // 7 entries (Mon–Sun)
   selectedExtras?: SelectedExtra[]; // extras selected for this week with quantities
+  extraIngredients?: ExtraShoppingIngredient[]; // manually added ingredients for this week
 }
 
 // ─── Custom shopping items ────────────────────────────────────────────────────

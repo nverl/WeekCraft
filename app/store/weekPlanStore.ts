@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { WeekPlan, SelectedExtra } from '@/app/types';
+import type { WeekPlan, SelectedExtra, ExtraShoppingIngredient } from '@/app/types';
 import { normalizeSelectedExtra } from '@/app/lib/weekUtils';
 import { useToastStore } from '@/app/store/toastStore';
 
@@ -41,6 +41,8 @@ interface WeekPlanStore {
   closeWizard: () => void;
   toggleExtraForWeek: (weekStart: string, extraId: string) => void;
   setExtraQtyForWeek: (weekStart: string, extraId: string, qty: number) => void;
+  addExtraIngredient: (weekStart: string, ing: ExtraShoppingIngredient) => void;
+  removeExtraIngredient: (weekStart: string, id: string) => void;
 }
 
 export const useWeekPlanStore = create<WeekPlanStore>()(
@@ -130,6 +132,42 @@ export const useWeekPlanStore = create<WeekPlanStore>()(
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updated),
           }).catch(() => toastError('Failed to update extras. Check your connection.'));
+          return { weeks: { ...state.weeks, [weekStart]: updated } };
+        });
+      },
+
+      addExtraIngredient: (weekStart, ing) => {
+        set((state) => {
+          const week = state.weeks[weekStart];
+          if (!week) return state;
+          const current = week.extraIngredients ?? [];
+          // No duplicate by name (case-insensitive)
+          if (current.some((e) => e.name.toLowerCase() === ing.name.toLowerCase())) return state;
+          const updated = { ...week, extraIngredients: [...current, ing] };
+          const scope = getActiveScope();
+          fetch(`/api/plans?scope=${encodeURIComponent(scope)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updated),
+          }).catch(() => toastError('Failed to save ingredient. Check your connection.'));
+          return { weeks: { ...state.weeks, [weekStart]: updated } };
+        });
+      },
+
+      removeExtraIngredient: (weekStart, id) => {
+        set((state) => {
+          const week = state.weeks[weekStart];
+          if (!week) return state;
+          const updated = {
+            ...week,
+            extraIngredients: (week.extraIngredients ?? []).filter((e) => e.id !== id),
+          };
+          const scope = getActiveScope();
+          fetch(`/api/plans?scope=${encodeURIComponent(scope)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updated),
+          }).catch(() => toastError('Failed to remove ingredient. Check your connection.'));
           return { weeks: { ...state.weeks, [weekStart]: updated } };
         });
       },

@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { DayPlan, Extra, ShoppingItem } from '@/app/types';
+import type { DayPlan, Extra, ShoppingItem, ExtraShoppingIngredient } from '@/app/types';
 
 export interface ExtraWithQty { extra: Extra; qty: number }
 
@@ -18,16 +18,16 @@ interface ShoppingStore {
   items: ShoppingItem[];
   showStaples: boolean;
 
-  /** Switch to a week and rebuild the item list. */
-  buildForWeek: (weekStart: string, plan: DayPlan[], extras: ExtraWithQty[]) => void;
+  /** Switch to a week and rebuild the item list (including manually added ingredients). */
+  buildForWeek: (weekStart: string, plan: DayPlan[], extras: ExtraWithQty[], extraIngredients?: ExtraShoppingIngredient[]) => void;
   /** Toggle a single item's pantry/checked state. */
   togglePantry: (name: string) => void;
   toggleShowStaples: () => void;
   clearList: () => void;
 }
 
-/** Build a flat shopping list for a single week plan + extras. */
-function buildWeekShoppingList(plan: DayPlan[], extras: ExtraWithQty[]): ShoppingItem[] {
+/** Build a flat shopping list for a single week plan + extras + manually added ingredients. */
+function buildWeekShoppingList(plan: DayPlan[], extras: ExtraWithQty[], extraIngredients: ExtraShoppingIngredient[] = []): ShoppingItem[] {
   const itemMap = new Map<string, ShoppingItem>();
 
   // ── Recipe ingredients ──────────────────────────────────────────────────
@@ -70,6 +70,27 @@ function buildWeekShoppingList(plan: DayPlan[], extras: ExtraWithQty[]): Shoppin
     }
   }
 
+  // ── Manually added extra ingredients ──────────────────────────────────
+  for (const ing of extraIngredients) {
+    const key = `${ing.name}__${ing.unit}__${ing.aisle}`;
+    const existing = itemMap.get(key);
+    if (existing) {
+      existing.scaledAmount = Math.round((existing.scaledAmount + ing.amount) * 100) / 100;
+    } else {
+      itemMap.set(key, {
+        name: ing.name,
+        amount: ing.amount,
+        scaledAmount: ing.amount,
+        unit: ing.unit,
+        aisle: ing.aisle,
+        isStaple: false,
+        recipeId: `extra-${ing.id}`,
+        recipeName: 'Added manually',
+        inPantry: false,
+      });
+    }
+  }
+
   return Array.from(itemMap.values()).sort((a, b) => a.aisle.localeCompare(b.aisle));
 }
 
@@ -81,9 +102,9 @@ export const useShoppingStore = create<ShoppingStore>()(
       items: [],
       showStaples: false,
 
-      buildForWeek: (weekStart, plan, extras) => {
+      buildForWeek: (weekStart, plan, extras, extraIngredients = []) => {
         const checked = new Set(get().pantryByWeek[weekStart] ?? []);
-        const fresh = buildWeekShoppingList(plan, extras);
+        const fresh = buildWeekShoppingList(plan, extras, extraIngredients);
         set({
           activeShoppingWeek: weekStart,
           items: fresh.map((item) => ({ ...item, inPantry: checked.has(item.name) })),
