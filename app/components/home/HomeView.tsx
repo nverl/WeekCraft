@@ -112,7 +112,9 @@ export default function HomeView({ recipes, onShowAllWeeks }: HomeViewProps) {
   const { data: session } = useSession();
   const { weeks, openWizardForWeek, setActiveWeek, toggleExtraForWeek, saveWeek } = useWeekPlanStore();
   const { resetWizard, setTargetWeekStart, setPlan, plan, markAsFreeDay, assignRecipeToDay, people } = useWizardStore();
-  const { extras, addExtra } = useExtrasStore();
+  const { extras, hiddenExtraIds, addExtra } = useExtrasStore();
+  const visibleRecipes = recipes.filter((r) => r.enabled !== false);
+  const visibleExtras  = extras.filter((e) => !hiddenExtraIds.includes(e.id));
 
   // Stable: current week start (computed once — week won't change during session)
   const todayWeekStart = useMemo(() => getWeekStartISO(new Date()), []);
@@ -426,7 +428,7 @@ export default function HomeView({ recipes, onShowAllWeeks }: HomeViewProps) {
 
       {showPicker && (
         <RecipePickerModal
-          recipes={recipes}
+          recipes={visibleRecipes}
           usedIds={usedIds}
           onSelect={(recipe) => {
             const label: DayLabel = (recipe.labels[0] as DayLabel) ?? 'healthy';
@@ -439,7 +441,7 @@ export default function HomeView({ recipes, onShowAllWeeks }: HomeViewProps) {
 
       {showExtrasPicker && (
         <ExtraPickerModal
-          extras={extras}
+          extras={visibleExtras}
           selectedIds={selectedExtraIds}
           onToggle={(extra) => toggleExtraForWeek(todayWeekStart, extra.id)}
           onAddCustom={(data) => addExtra(data)}
