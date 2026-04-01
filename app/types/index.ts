@@ -96,6 +96,14 @@ export interface WeekPlan {
   selectedExtras?: SelectedExtra[]; // extras selected for this week with quantities
 }
 
+// ─── Custom shopping items ────────────────────────────────────────────────────
+
+export interface CustomShoppingItem {
+  id: string;
+  name: string;
+  inCart: boolean;
+}
+
 // ─── Wizard state ─────────────────────────────────────────────────────────────
 
 export interface WizardState {

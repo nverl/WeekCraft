@@ -8,6 +8,7 @@ import { useExtrasStore } from '@/app/store/extrasStore';
 import { useIngredientStore } from '@/app/store/ingredientStore';
 import { useWizardStore } from '@/app/store/wizardStore';
 import { useHouseholdStore } from '@/app/store/householdStore';
+import { useCustomShoppingStore } from '@/app/store/customShoppingStore';
 import type { WeekPlan, Recipe, Extra, IngredientEntry } from '@/app/types';
 import type { HouseholdInfo } from '@/app/store/householdStore';
 
@@ -22,6 +23,7 @@ export default function DataLoader({ children }: { children: React.ReactNode }) 
   const hydrateIngredients = useIngredientStore((s) => s.hydrate);
   const setPeople = useWizardStore((s) => s.setPeople);
   const { activeScope, hydrateHouseholds, setActiveScope } = useHouseholdStore();
+  const { loadItems: loadCustomItems, clearItems: clearCustomItems } = useCustomShoppingStore();
 
   // ── Initial full load (runs once after authentication) ───────────────────
   useEffect(() => {
@@ -41,6 +43,9 @@ export default function DataLoader({ children }: { children: React.ReactNode }) 
             fetch('/api/account/me'),
             fetch('/api/households'),
           ]);
+
+        // Load custom shopping items (fire-and-forget alongside other loads)
+        loadCustomItems(activeScope);
 
         const [plans, customRecipes, favouriteIds, recipeNotes, userExtras, userIngredients, account, households]: [
           WeekPlan[], Recipe[], string[], Record<string, string>, Extra[], IngredientEntry[],
@@ -95,10 +100,12 @@ export default function DataLoader({ children }: { children: React.ReactNode }) 
 
     async function reloadPlans() {
       resetHydration();
+      clearCustomItems();
       try {
-        const res = await fetch(`/api/plans?scope=${encodeURIComponent(activeScope)}`, {
-          signal: controller.signal,
-        });
+        const [res] = await Promise.all([
+          fetch(`/api/plans?scope=${encodeURIComponent(activeScope)}`, { signal: controller.signal }),
+          loadCustomItems(activeScope),
+        ]);
         if (!res.ok) {
           hydrateWeeks([]);
           return;

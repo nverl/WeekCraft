@@ -1,16 +1,29 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   ShoppingCart, Check, ChevronDown, ChevronUp,
   SlidersHorizontal, Package, ListTodo, Copy, CheckCheck, MoreHorizontal,
+  Plus, X, ShoppingBag,
 } from 'lucide-react';
 import { useShoppingStore, type ExtraWithQty } from '@/app/store/shoppingStore';
 import { useWeekPlanStore } from '@/app/store/weekPlanStore';
 import { useExtrasStore } from '@/app/store/extrasStore';
+import { useHouseholdStore } from '@/app/store/householdStore';
+import { useCustomShoppingStore } from '@/app/store/customShoppingStore';
 import { formatWeekRange, getWeekStart, normalizeSelectedExtra } from '@/app/lib/weekUtils';
 import { downloadICS, buildPlainText } from '@/app/lib/ical';
 import type { ShoppingItem } from '@/app/types';
+
+// ── Common household item suggestions ─────────────────────────────────────────
+
+const SUGGESTIONS = [
+  'Soap', 'Shampoo', 'Conditioner', 'Toilet paper', 'Paper towels',
+  'Toothpaste', 'Dish soap', 'Laundry detergent', 'Cleaning spray',
+  'Trash bags', 'Aluminum foil', 'Plastic wrap', 'Batteries',
+  'Hand soap', 'Sponges', 'Fabric softener', 'Deodorant',
+  'Shower gel', 'Dishwasher tablets', 'Bleach',
+];
 
 // ── Aisle group ───────────────────────────────────────────────────────────────
 
@@ -79,6 +92,185 @@ function AisleGroup({ aisle, items, onToggle }: AisleGroupProps) {
   );
 }
 
+// ── Other section ─────────────────────────────────────────────────────────────
+
+function OtherSection({ scope }: { scope: string }) {
+  const { items, addItem, toggleItem, removeItem } = useCustomShoppingStore();
+  const [query, setQuery] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const queryTrimmed = query.trim();
+  const queryLower = queryTrimmed.toLowerCase();
+
+  // Filter suggestions: not already added, matches query
+  const addedNames = new Set(items.map((i) => i.name.toLowerCase()));
+  const filteredSuggestions = SUGGESTIONS.filter(
+    (s) => !addedNames.has(s.toLowerCase()) && s.toLowerCase().includes(queryLower)
+  );
+
+  // Show "Add [query]" if typed text isn't in suggestions and not already added
+  const canAddCustom =
+    queryTrimmed.length > 0 &&
+    !addedNames.has(queryLower) &&
+    !SUGGESTIONS.some((s) => s.toLowerCase() === queryLower);
+
+  const handleAdd = async (name: string) => {
+    if (!name.trim()) return;
+    await addItem(name.trim(), scope);
+    setQuery('');
+    setShowSuggestions(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && queryTrimmed) {
+      handleAdd(queryTrimmed);
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      inputRef.current?.blur();
+    }
+  };
+
+  const needItems = items.filter((i) => !i.inCart);
+  const doneItems = items.filter((i) => i.inCart);
+  // Quick-add chips: suggestions not yet added, capped at 8 visible
+  const quickChips = SUGGESTIONS.filter((s) => !addedNames.has(s.toLowerCase())).slice(0, 8);
+
+  return (
+    <div className="mt-2">
+      {/* Section header */}
+      <div className="flex items-center gap-2 mb-2">
+        <ShoppingBag size={13} className="text-zinc-400" />
+        <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
+          Other
+        </span>
+        {items.length > 0 && (
+          <span className="text-xs bg-zinc-100 text-zinc-500 font-semibold px-1.5 py-0.5 rounded-full">
+            {items.filter((i) => i.inCart).length}/{items.length}
+          </span>
+        )}
+      </div>
+
+      {/* Add input */}
+      <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden">
+        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-zinc-100">
+          <Plus size={14} className="text-zinc-400 flex-shrink-0" />
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setShowSuggestions(true); }}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+            onKeyDown={handleKeyDown}
+            placeholder="Add item…"
+            className="flex-1 text-sm text-zinc-700 placeholder-zinc-400 outline-none bg-transparent"
+          />
+          {queryTrimmed && (
+            <button
+              onMouseDown={(e) => { e.preventDefault(); handleAdd(queryTrimmed); }}
+              className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 cursor-pointer px-1"
+            >
+              Add
+            </button>
+          )}
+        </div>
+
+        {/* Dropdown suggestions */}
+        {showSuggestions && (filteredSuggestions.length > 0 || canAddCustom) && (
+          <div className="divide-y divide-zinc-50 max-h-48 overflow-y-auto">
+            {filteredSuggestions.slice(0, 6).map((s) => (
+              <button
+                key={s}
+                onMouseDown={(e) => { e.preventDefault(); handleAdd(s); }}
+                className="w-full text-left px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 cursor-pointer flex items-center gap-2"
+              >
+                <Plus size={12} className="text-zinc-300" />
+                {s}
+              </button>
+            ))}
+            {canAddCustom && (
+              <button
+                onMouseDown={(e) => { e.preventDefault(); handleAdd(queryTrimmed); }}
+                className="w-full text-left px-4 py-2.5 text-sm text-zinc-500 hover:bg-zinc-50 cursor-pointer flex items-center gap-2"
+              >
+                <Plus size={12} className="text-emerald-500" />
+                <span>Add &ldquo;<span className="font-semibold text-zinc-700">{queryTrimmed}</span>&rdquo;</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Quick-add chips (shown when input is not focused / empty) */}
+        {!showSuggestions && !queryTrimmed && quickChips.length > 0 && (
+          <div className="px-3 py-2.5 flex flex-wrap gap-1.5">
+            {quickChips.map((s) => (
+              <button
+                key={s}
+                onClick={() => handleAdd(s)}
+                className="text-xs font-medium px-2.5 py-1 rounded-full border border-zinc-200 text-zinc-600 hover:border-zinc-400 hover:bg-zinc-50 transition-all cursor-pointer"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Items to get */}
+        {needItems.length > 0 && (
+          <div className="divide-y divide-zinc-100">
+            {needItems.map((item) => (
+              <div key={item.id} className="flex items-center gap-3 px-4 py-3">
+                <button
+                  onClick={() => toggleItem(item.id, true, scope)}
+                  className="flex-shrink-0 w-5 h-5 rounded-md border-2 border-zinc-300 hover:border-zinc-500 flex items-center justify-center transition-all cursor-pointer"
+                />
+                <span className="flex-1 text-sm text-zinc-700">{item.name}</span>
+                <button
+                  onClick={() => removeItem(item.id, scope)}
+                  className="text-zinc-300 hover:text-zinc-500 transition-colors cursor-pointer"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Done items */}
+        {doneItems.length > 0 && (
+          <div className="divide-y divide-zinc-100 border-t border-zinc-100">
+            {doneItems.map((item) => (
+              <div key={item.id} className="flex items-center gap-3 px-4 py-3 opacity-50">
+                <button
+                  onClick={() => toggleItem(item.id, false, scope)}
+                  className="flex-shrink-0 w-5 h-5 rounded-md border-2 bg-emerald-500 border-emerald-500 flex items-center justify-center cursor-pointer"
+                >
+                  <Check size={11} strokeWidth={3} className="text-white" />
+                </button>
+                <span className="flex-1 text-sm line-through text-zinc-400">{item.name}</span>
+                <button
+                  onClick={() => removeItem(item.id, scope)}
+                  className="text-zinc-300 hover:text-zinc-500 transition-colors cursor-pointer"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Empty state */}
+        {items.length === 0 && !showSuggestions && !queryTrimmed && (
+          <p className="px-4 py-3 text-xs text-zinc-400">
+            Tap a suggestion or type to add household items like soap, toilet paper…
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── ICS / Reminders export helpers live in app/lib/ical.ts ───────────────────
 
 // ── Main ShoppingList component ───────────────────────────────────────────────
@@ -87,6 +279,8 @@ export default function ShoppingList() {
   const { items, showStaples, togglePantry, toggleShowStaples, rebuildMultiList } = useShoppingStore();
   const { weeks, selectedWeeksForShopping, toggleWeekForShopping, setAllWeeksForShopping } = useWeekPlanStore();
   const { extras } = useExtrasStore();
+  const { activeScope } = useHouseholdStore();
+  const { items: customItems } = useCustomShoppingStore();
 
   const [copied, setCopied] = useState(false);
   const [weeksExpanded, setWeeksExpanded] = useState(false);
@@ -136,11 +330,17 @@ export default function ShoppingList() {
   const checkedItems = displayItems.filter((i) => i.inPantry).length;
   const progress = totalItems > 0 ? (checkedItems / totalItems) * 100 : 0;
 
-  // Items to export: everything not yet in pantry (all items, including hidden staples)
+  // Items to export: everything not yet in pantry + unchecked custom items
   const exportItems = items.filter((i) => !i.inPantry);
+  const exportCustomItems = customItems
+    .filter((i) => !i.inCart)
+    .map((i) => ({ name: i.name, scaledAmount: 1 as unknown as number, unit: '' }));
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(buildPlainText(exportItems)).then(() => {
+    const recipeText = buildPlainText(exportItems);
+    const customText = exportCustomItems.map((i) => i.name).join('\n');
+    const fullText = [recipeText, customText].filter(Boolean).join('\n');
+    navigator.clipboard.writeText(fullText).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
@@ -237,7 +437,7 @@ export default function ShoppingList() {
                   </button>
                   {copied && (
                     <p className="text-[10px] text-zinc-400 leading-tight px-1">
-                      Open Reminders → tap a list → paste
+                      Open Notes → paste to create a checklist
                     </p>
                   )}
                 </div>
@@ -266,27 +466,35 @@ export default function ShoppingList() {
       {/* List */}
       <div className="flex-1 overflow-y-auto px-4 py-4">
         {!hasPlans ? (
-          <div className="flex flex-col items-center justify-center h-48 text-zinc-400">
-            <ShoppingCart size={32} className="mb-3 opacity-40" />
-            <p className="text-sm">Plan a week first to build your shopping list.</p>
+          <div className="flex flex-col gap-3 max-w-lg mx-auto">
+            <div className="flex flex-col items-center justify-center h-32 text-zinc-400">
+              <ShoppingCart size={32} className="mb-3 opacity-40" />
+              <p className="text-sm">Plan a week first to build your shopping list.</p>
+            </div>
+            <OtherSection scope={activeScope} />
           </div>
         ) : selectedWeeksForShopping.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-zinc-400">
-            <ShoppingCart size={32} className="mb-3 opacity-40" />
-            <p className="text-sm">Select at least one week above.</p>
-          </div>
-        ) : totalItems === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-zinc-400 text-center px-6">
-            <ShoppingCart size={32} className="mb-3 opacity-40" />
-            <p className="text-sm font-semibold text-zinc-600">Nothing left to buy!</p>
-            <p className="text-xs text-zinc-400 mt-1">
-              {checkedItems > 0
-                ? `All ${checkedItems} item${checkedItems !== 1 ? 's' : ''} are already in your pantry.`
-                : 'The selected weeks have no recipes with ingredients yet.'}
-            </p>
+          <div className="flex flex-col gap-3 max-w-lg mx-auto">
+            <div className="flex flex-col items-center justify-center h-32 text-zinc-400">
+              <ShoppingCart size={32} className="mb-3 opacity-40" />
+              <p className="text-sm">Select at least one week above.</p>
+            </div>
+            <OtherSection scope={activeScope} />
           </div>
         ) : (
           <div className="flex flex-col gap-3 max-w-lg mx-auto">
+            {totalItems === 0 && (
+              <div className="flex flex-col items-center justify-center h-32 text-zinc-400 text-center px-6">
+                <ShoppingCart size={32} className="mb-3 opacity-40" />
+                <p className="text-sm font-semibold text-zinc-600">Nothing left to buy!</p>
+                <p className="text-xs text-zinc-400 mt-1">
+                  {checkedItems > 0
+                    ? `All ${checkedItems} item${checkedItems !== 1 ? 's' : ''} are already in your pantry.`
+                    : 'The selected weeks have no recipes with ingredients yet.'}
+                </p>
+              </div>
+            )}
+
             {/* Need to buy groups */}
             {aisles.map((aisle) => (
               <AisleGroup
@@ -327,6 +535,9 @@ export default function ShoppingList() {
                 </div>
               </div>
             )}
+
+            {/* Other section — always visible */}
+            <OtherSection scope={activeScope} />
           </div>
         )}
       </div>
