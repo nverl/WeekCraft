@@ -52,7 +52,7 @@ function AisleGroup({ aisle, items, onToggle }: AisleGroupProps) {
         <div className="divide-y divide-zinc-100">
           {items.map((item) => (
             <label
-              key={item.name}
+              key={`${item.name}__${item.unit}__${item.aisle}`}
               className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-zinc-50 transition-colors ${item.inPantry ? 'opacity-50' : ''}`}
             >
               <div
@@ -309,7 +309,7 @@ export default function ShoppingList() {
                 <div className="bg-white border border-zinc-200 rounded-2xl divide-y divide-zinc-100">
                   {pantryItems.map((item) => (
                     <label
-                      key={item.name}
+                      key={`${item.name}__${item.unit}__${item.aisle}`}
                       className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-zinc-50 opacity-50"
                     >
                       <div
