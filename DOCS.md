@@ -93,18 +93,25 @@ Settings
 - In the week detail view: qty steppers + tap-to-expand ingredient list
 - Extras contribute to the shopping list, scaled by qty
 - **Built-in extras** cannot be edited in-place; use "Duplicate & edit" to create a custom copy
+- **Hide extras** — both built-in and custom extras can be hidden (EyeOff button); hidden extras excluded from wizard Step 2 picker and all extras pickers; `hiddenExtraIds[]` persisted in `weekcraft-extras-v1`
+- **Collapsible "Hidden (N)" section** at the bottom of the Extras view — click eye icon to restore
 
 ### Shopping List
-- Aggregates ingredients from all DayPlans + selected Extras for a week
-- Grouped by aisle (Produce, Dairy & Eggs, Meat & Poultry, etc.)
-- Per-item: tick → moves to "In Pantry" section
-- Progress bar showing % checked
+- **Single-week view** — one week at a time; week tabs with ‹ › arrows at the top; defaults to the nearest upcoming week
+- Aggregates ingredients from the active week's DayPlans + selected Extras, grouped by aisle (Produce, Dairy & Eggs, Meat & Poultry, etc.)
+- Per-item: tick → moves to "Got it" section; progress bar shows % checked
+- **Per-week pantry state** — checked items stored in `pantryByWeek` (localStorage key `kitchenflow-shopping-v2`) keyed by `weekStart`; survives page reloads and week-switches independently
 - "Show staples" toggle — staples hidden by default
-- **Multi-week selector** — compact collapsible header; "N weeks" pill expands to show per-week toggles; `…` button expands action buttons (select all / clear)
+- **Ingredient picker** — search the full ingredient catalogue at the top; select an ingredient, set amount, press Add; appears in the correct aisle group with an "added" badge and ✕ remove button; stored in `WeekPlan.extraIngredients` (household-shared via DB)
+- **Other section** — free-form household items (soap, toilet paper, etc.) per week; quick-tap chip suggestions + free-text search with autocomplete dropdown; items have their own checkbox (inCart); stored in DB (`ShoppingCustomItem` model, scoped to user or household + weekStart)
+- **Copy list** — copies all unchecked recipe ingredients + unchecked Other items to clipboard (one item per line, no bullet characters); paste into iOS Notes to get a checklist
+- **Options panel** — "Options" button expands: Reminders (.ics download), Copy list, Show/Hide staples
 
 ### Recipes
 - Browse seed recipes + custom recipes side by side
-- **Enable / disable built-in recipes** — disabled recipes are excluded from auto-generation (`enabled: false`); they remain available for manual swap; state persisted to localStorage via `disabledBuiltinIds[]` in `weekcraft-recipes-v1`
+- **Enable / disable (hide) built-in recipes** — disabled recipes are excluded from auto-generation (`enabled: false`) AND excluded from the swap picker; state persisted to localStorage via `disabledBuiltinIds[]` in `weekcraft-recipes-v1`
+- **Hide custom recipes** — `enabled` flag stored server-side via `PUT /api/user-recipes/[id]`; hidden custom recipes also excluded from wizard and swap pool
+- **Collapsible "Hidden (N)" section** at the bottom of the Recipes view — shows all hidden built-in + custom recipes; click eye icon to re-enable
 - **Duplicate & edit built-in** — pre-fills editor with seed data; on save creates a new custom recipe (`addRecipe`), leaving the built-in unchanged
 - **Edit custom recipes** — full editor; saves via `PUT /api/user-recipes/[id]`
 - Favourite toggle (star) per recipe
@@ -255,13 +262,15 @@ npm run dev
 │  /household           /household/invite                       │
 │  /household/invite/[token]   /household/member/[userId]       │
 │  /favourites          /notes          /reminders              │
+│  /shopping/custom                                             │
 └────────────────────────────┬────────────────────────────────┘
                               │ Prisma
 ┌────────────────────────────▼────────────────────────────────┐
 │  Neon PostgreSQL  (serverless)                                │
 │  Models: User, WeekPlan, Household, HouseholdMember,          │
 │          HouseholdInvite, UserRecipe, UserExtra,              │
-│          UserIngredient, RecipeFavourite, RecipeNote          │
+│          UserIngredient, RecipeFavourite, RecipeNote,         │
+│          ShoppingCustomItem                                   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -319,7 +328,9 @@ npm run dev
 │   │   │   └── member/[userId]/route.ts # DELETE — remove member
 │   │   ├── favourites/route.ts     # GET/POST/DELETE
 │   │   ├── notes/route.ts          # GET/POST/DELETE
-│   │   └── reminders/route.ts      # GET/POST/DELETE
+│   │   ├── reminders/route.ts      # GET/POST/DELETE
+│   │   └── shopping/
+│   │       └── custom/route.ts     # GET/POST/PATCH/DELETE — "Other" section items (ShoppingCustomItem)
 │   │
 │   ├── components/
 │   │   ├── DataLoader.tsx          # Fetches all user data on mount after session auth
@@ -344,7 +355,7 @@ npm run dev
 │   │   │   └── ExtraPickerModal.tsx # Modal to select/deselect extras with ingredient preview
 │   │   │
 │   │   ├── shopping/
-│   │   │   └── ShoppingList.tsx    # Shopping list grouped by aisle
+│   │   │   └── ShoppingList.tsx    # Shopping list: week tabs, aisle groups, ingredient picker, Other section
 │   │   │
 │   │   ├── home/
 │   │   │   └── HomeView.tsx        # Home screen wrapper (week summary)
@@ -362,10 +373,12 @@ npm run dev
 │   │
 │   ├── store/
 │   │   ├── wizardStore.ts          # Wizard state + generatePlan() + parseISODuration()
-│   │   ├── shoppingStore.ts        # Shopping list state + pantry toggle
-│   │   ├── weekPlanStore.ts        # Multi-week plans + setExtraQtyForWeek()
+│   │   ├── shoppingStore.ts        # Shopping list: buildForWeek(), pantry toggle, per-week pantry state
+│   │   ├── customShoppingStore.ts  # "Other" section items (ShoppingCustomItem) — loaded per week from API
+│   │   ├── weekPlanStore.ts        # Multi-week plans + setExtraQtyForWeek() + add/removeExtraIngredient()
+│   │   ├── householdStore.ts       # Active scope + accessible households list
 │   │   ├── recipeStore.ts          # User recipes (custom + seed merge)
-│   │   ├── extrasStore.ts          # User extras
+│   │   ├── extrasStore.ts          # User extras + hiddenExtraIds
 │   │   └── ingredientStore.ts      # User ingredients
 │   │
 │   └── types/
@@ -471,6 +484,22 @@ interface SelectedExtra {
   qty: number;
 }
 
+// An ingredient manually added to the shopping list for a specific week
+interface ExtraShoppingIngredient {
+  id: string;       // client-generated uuid
+  name: string;
+  amount: number;
+  unit: string;
+  aisle: string;
+}
+
+// A free-form household item in the "Other" section of the shopping list
+interface CustomShoppingItem {
+  id: string;
+  name: string;
+  inCart: boolean;
+}
+
 // A full week plan
 interface WeekPlan {
   weekStart: string;            // ISO string of Monday 00:00:00 UTC
@@ -478,6 +507,7 @@ interface WeekPlan {
   people: number;               // Week-level default people
   days: DayPlan[];              // 7 entries Mon–Sun
   selectedExtras?: SelectedExtra[];
+  extraIngredients?: ExtraShoppingIngredient[];  // Manually added ingredients (household-shared via DB)
 }
 
 // Shopping list item
@@ -576,6 +606,19 @@ Composite PK `[userId, recipeId]`. Works for both seed recipes and user recipes.
 #### `RecipeNote`
 Composite PK `[userId, recipeId]`. One note per user per recipe. `note` is plain text.
 
+#### `ShoppingCustomItem`
+Free-form items in the shopping list "Other" section. Scoped to either a user or a household, per week.
+
+| Field | Type | Notes |
+|---|---|---|
+| id | String (cuid) | PK |
+| userId | String? | Nullable — set for personal scope |
+| householdId | String? | Nullable — set for household scope |
+| name | String | Item name (duplicates prevented case-insensitively per scope + weekStart) |
+| weekStart | String | ISO Monday string — ties the item to a specific week |
+| inCart | Boolean | Default `false` |
+| createdAt | DateTime | |
+
 ### Applying schema changes
 
 ```bash
@@ -600,11 +643,12 @@ All stores use Zustand's `persist` middleware writing to `localStorage`.
 | Store | localStorage key | Responsibility |
 |---|---|---|
 | `wizardStore` | `kitchenflow-wizard` | Wizard step state, day configs, people, plan, extras |
-| `shoppingStore` | `kitchenflow-shopping` | Shopping items, pantry state |
-| `weekPlanStore` | `weekcraft-ui-v1` | Saved week plans (multi-week), active week, shopping selection |
+| `shoppingStore` | `kitchenflow-shopping-v2` | Shopping items, per-week pantry state (`pantryByWeek`), `showStaples` |
+| `customShoppingStore` | *(none — no persist)* | "Other" section items loaded per-week from `/api/shopping/custom` |
+| `weekPlanStore` | `weekcraft-ui-v1` | Saved week plans (multi-week), active week |
 | `householdStore` | `weekcraft-household-scope` | Active scope (`'personal'` or `householdId`) + all accessible households |
-| `recipeStore` | `kitchenflow-recipes` | Seed + custom recipes merged |
-| `extrasStore` | `kitchenflow-extras` | Seed + custom extras merged |
+| `recipeStore` | `kitchenflow-recipes` | Seed + custom recipes merged; `disabledBuiltinIds[]` |
+| `extrasStore` | `weekcraft-extras-v1` | Seed + custom extras merged; `hiddenExtraIds[]` |
 | `ingredientStore` | `kitchenflow-ingredients` | User ingredient catalogue |
 
 ### Key actions
@@ -623,6 +667,8 @@ All stores use Zustand's `persist` middleware writing to `localStorage`.
 - `hydrate(plans)` — bulk-loads plans from DB into store
 - `resetHydration()` — clears plan data and sets `hydrated: false` (called before scope-change reload)
 - `setExtraQtyForWeek(weekStart, extraId, qty)` — update qty of an extra; qty ≤ 0 removes it
+- `addExtraIngredient(weekStart, ing)` — append an `ExtraShoppingIngredient` to the week plan; prevents case-insensitive name duplicates; saves via PUT `/api/plans`
+- `removeExtraIngredient(weekStart, id)` — remove a manually-added ingredient by id; saves via PUT `/api/plans`
 - Active scope is read from `localStorage` at call time (avoids circular imports with `householdStore`)
 
 #### `householdStore`
@@ -632,8 +678,17 @@ All stores use Zustand's `persist` middleware writing to `localStorage`.
 - `hydrateHouseholds(households)` — validates stored scope is still accessible; resets to `'personal'` if not
 
 #### `shoppingStore`
-- `buildShoppingList(plans, extras)` — aggregate ingredients across all DayPlans + selected Extras
-- `togglePantry(itemKey)` — mark item as in pantry / not in pantry
+- `buildForWeek(weekStart, plan, extras, extraIngredients?)` — builds the shopping list for a single week; applies persisted pantry state from `pantryByWeek[weekStart]`; includes manually-added `ExtraShoppingIngredient` items (with `recipeId: 'extra-<id>'` and `recipeName: 'Added manually'`)
+- `togglePantry(name)` — atomically updates both `pantryByWeek[activeWeek]` and `items[].inPantry`; pantry state survives week switches and page reloads
+- `toggleShowStaples()` — toggle visibility of staple items
+- `clearList()` — reset items and activeShoppingWeek
+
+#### `customShoppingStore`
+- `loadItems(scope, weekStart)` — fetch "Other" items from GET `/api/shopping/custom?scope=&weekStart=`; sets `loadedWeek`
+- `addItem(name, scope, weekStart)` — POST `/api/shopping/custom`; appends to local state; prevents case-insensitive duplicates
+- `toggleItem(id, inCart, scope)` — PATCH `/api/shopping/custom`; updates `inCart` locally
+- `removeItem(id, scope)` — DELETE `/api/shopping/custom?id=&scope=`; removes from local state
+- `clearItems()` — reset items and loadedWeek (called on week/scope change)
 
 ### `DataLoader.tsx`
 
@@ -717,6 +772,17 @@ All routes require an authenticated session (checked via `auth()` from NextAuth)
 | POST | `/api/household/invite/[token]` | Accept invite — user may join while already a member of other households |
 | DELETE | `/api/household/invite/[token]` | Revoke invite (owner only) |
 | DELETE | `/api/household/member/[userId]` | Remove a specific member (owner only) |
+
+### Shopping — Custom Items ("Other" section)
+
+| Method | Route | Description |
+|---|---|---|
+| GET | `/api/shopping/custom?scope=&weekStart=` | List custom shopping items for a given scope + week |
+| POST | `/api/shopping/custom` | Create a custom item (`{ name, scope, weekStart }`); prevents case-insensitive duplicate names per scope + week |
+| PATCH | `/api/shopping/custom` | Toggle `inCart` for an item (`{ id, inCart, scope }`) |
+| DELETE | `/api/shopping/custom?id=&scope=` | Delete a custom item (ownership guard) |
+
+**`?scope=` parameter** — same semantics as `/api/plans`: `personal` or `<householdId>` (access validated server-side).
 
 ### Other
 

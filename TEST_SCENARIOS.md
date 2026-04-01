@@ -468,23 +468,24 @@
 
 ## 6. Shopping List
 
-### TC-SHP-01 — List builds from single week plan
-**Preconditions:** One week plan with 7 recipes exists; that week is selected.
+### TC-SHP-01 — List builds for active week
+**Preconditions:** At least one week plan with recipes exists.
 
 1. → Navigate to Shopping tab
 
-✓ Items grouped by aisle
-✓ Each item shows aggregated amount and unit
-✓ Item count matches expected ingredients across 7 days
+✓ The nearest upcoming week is selected by default (or the first planned week)
+✓ Items are grouped by aisle (e.g. Produce, Meat & Poultry, Dairy & Eggs)
+✓ Each item shows aggregated amount and unit across all days in the week
+✓ Progress bar shows 0%
 
 ---
 
 ### TC-SHP-02 — Pantry toggle
 1. → Tick an item in the shopping list
 
-✓ Item moves to "In Pantry" section
+✓ Item moves to "Got it" / "In Pantry" section
 ✓ Progress bar percentage increases
-✓ Untick: item returns to main list
+✓ Untick: item returns to main list at correct position
 
 ---
 
@@ -499,75 +500,165 @@
 ---
 
 ### TC-SHP-04 — Show / hide staples
-1. → Open shopping list
+1. → Open Options panel
 2. → Toggle "Show staples"
 
-✓ Staple items appear / disappear
-✓ Item count updates accordingly
-✓ Progress bar recalculates
+✓ Staple items appear / disappear from aisle groups
+✓ Item count and progress bar recalculate
 
 ---
 
-### TC-SHP-05 — Multi-week selection
+### TC-SHP-05 — Week tab navigation
+**Preconditions:** Two or more week plans exist.
+
+1. → Navigate to Shopping tab
+2. → Click the `›` arrow to go to the next week
+
+✓ Week label in the header updates (e.g. "Apr 6 – Apr 12")
+✓ Shopping list rebuilds with the new week's ingredients
+✓ Previously checked items for the first week are not lost
+
+3. → Click `‹` to go back to the first week
+
+✓ Items from the first week are displayed
+✓ Any pantry-ticked items for the first week are still ticked
+
+---
+
+### TC-SHP-06 — Per-week pantry independence
 **Preconditions:** Two week plans exist.
 
-1. → Click "All weeks" pill in the shopping header to expand week selector
-2. → Check Week 1 only
+1. → Navigate to Shopping tab on Week 1
+2. → Tick 3 items as in pantry
+3. → Switch to Week 2 via `›`
 
-✓ Shopping list shows only Week 1 ingredients
-3. → Also check Week 2
+✓ Week 2 shows 0 items ticked (pantry state is per-week)
+4. → Switch back to Week 1
 
-✓ Ingredients from both weeks are aggregated (matching items summed)
-
----
-
-### TC-SHP-06 — "Select all" weeks
-1. → Expand week selector
-2. → Click "Select all"
-
-✓ All planned weeks checked
-✓ List aggregates all weeks
+✓ The 3 items are still ticked
+✓ No pantry state is lost when switching weeks
 
 ---
 
-### TC-SHP-07 — "Clear" weeks
-1. → With all weeks selected, click "Clear"
+### TC-SHP-07 — Pantry state survives page reload
+**Preconditions:** Some items are ticked in the current week.
 
-✓ No weeks selected
-✓ Shopping list shows empty state or 0 items
+1. → Tick 2 items
+2. → Reload the page (F5 / cmd-R)
+3. → Navigate to Shopping tab
+
+✓ The same 2 items are still ticked
+✓ Progress bar reflects the correct percentage
 
 ---
 
 ### TC-SHP-08 — Extras included in shopping list
 **Preconditions:** A plan with qty-2 "Green Smoothie" extra exists; that week is selected.
 
-1. → Open shopping list
-
-✓ Smoothie ingredients present, amounts × 2
-✓ Aisle grouping correct
-
----
-
-### TC-SHP-09 — Pantry state preserved across rebuild
-1. → Mark 3 items as in pantry
-2. → Toggle a different week in the selector (triggers rebuildMultiList)
-
-✓ The 3 items that were in pantry remain ticked / in-pantry after rebuild
-✓ New items from the added week appear un-ticked
-
----
-
-### TC-SHP-10 — Compact header (collapsed state)
 1. → Navigate to Shopping tab
 
-✓ Header shows compact "N weeks" pill and `…` button
-✓ Week rows and action buttons are hidden by default
-2. → Click the "N weeks" pill
+✓ Smoothie ingredients are present with amounts × 2
+✓ Ingredients are placed in the correct aisle group
 
-✓ Week selector expands inline
-3. → Click `…`
+---
 
-✓ Action buttons expand inline
+### TC-SHP-09 — Ingredient picker — add from catalogue
+**Preconditions:** Active week plan exists.
+
+1. → Open Shopping tab
+2. → Focus the ingredient search box at the top of the list
+3. → Type "tom" to search for tomatoes
+
+✓ Dropdown shows matching ingredients (e.g. "Cherry tomatoes", "Tomato paste")
+4. → Click "Cherry tomatoes"
+
+✓ The row collapses to show a pending confirmation: name pre-filled, amount input focused
+5. → Enter amount `200`
+6. → Click "Add"
+
+✓ The ingredient appears in the correct aisle group (e.g. Produce) with an "added" badge
+✓ A ✕ button is visible to remove it
+✓ The ingredient is stored household-shared (visible to all household members)
+
+---
+
+### TC-SHP-10 — Ingredient picker — remove manually-added ingredient
+**Preconditions:** A manually-added ingredient exists in the shopping list.
+
+1. → Click the ✕ button on an "added" badge ingredient
+
+✓ The ingredient is removed from the list immediately
+✓ The ingredient is removed from the week plan (persisted to DB)
+✓ Pantry state for that ingredient is not carried over
+
+---
+
+### TC-SHP-11 — Ingredient picker — no duplicates
+**Preconditions:** "Olive oil" has already been added manually to the shopping list.
+
+1. → Search for "Olive oil" in the ingredient picker
+2. → Select it and click "Add"
+
+✓ The duplicate is silently ignored (no second entry appears)
+
+---
+
+### TC-SHP-12 — Other section — add free-text item
+1. → Scroll to the "Other" section at the bottom of the shopping list
+2. → Type "Dish soap" in the free-text input
+3. → Press Enter or click "Add"
+
+✓ "Dish soap" appears in the Other list with an unchecked checkbox
+✓ Item is persisted to the DB (ShoppingCustomItem) scoped to the current week
+
+---
+
+### TC-SHP-13 — Other section — quick-tap chip
+1. → Navigate to the Other section
+2. → Tap one of the suggestion chips (e.g. "Toilet paper")
+
+✓ The item is added to the Other list immediately (no typing required)
+✓ If the item already exists, no duplicate is added
+
+---
+
+### TC-SHP-14 — Other section — check off item
+1. → Add an item to the Other section
+2. → Tap its checkbox
+
+✓ The item is marked as in-cart (struck through or visually checked)
+✓ The state persists after a page reload
+
+---
+
+### TC-SHP-15 — Other section — remove item
+1. → Long-press or tap ✕ on an Other item
+
+✓ The item is removed from the list
+✓ The item is deleted from the DB
+
+---
+
+### TC-SHP-16 — Other section is per-week
+**Preconditions:** Two week plans exist.
+
+1. → Add "Soap" to the Other section on Week 1
+2. → Switch to Week 2
+
+✓ "Soap" does not appear in Week 2's Other section
+3. → Switch back to Week 1
+
+✓ "Soap" is still present in Week 1's Other section
+
+---
+
+### TC-SHP-17 — Copy list
+1. → Open Options panel
+2. → Click "Copy list"
+
+✓ Clipboard contains all unchecked recipe ingredients + unchecked Other items
+✓ One item per line, no bullet characters
+✓ Checked (pantry) items are excluded
 
 ---
 
@@ -682,6 +773,21 @@
 
 ---
 
+### TC-RCP-12 — Hidden recipes collapsible section
+**Preconditions:** At least one built-in recipe has been disabled.
+
+1. → Navigate to Recipes tab
+2. → Scroll to the bottom
+
+✓ A collapsible "Hidden (N)" section is present where N = number of hidden recipes
+✓ Expanding it shows all hidden built-in and custom recipes
+3. → Click the eye icon on a hidden recipe
+
+✓ Recipe is re-enabled and moves back to the main recipe list
+✓ The hidden count (N) decreases by 1
+
+---
+
 ## 8. Extras Tab
 
 ### TC-EXT-01 — Browse extras
@@ -740,6 +846,38 @@
 
 ✓ No "Edit" button visible — only "Duplicate & edit"
 ✓ No "Delete" button visible
+
+---
+
+### TC-EXT-07 — Hide a built-in extra
+1. → Navigate to Extras tab
+2. → Click the eye/hide (EyeOff) icon on a built-in extra
+
+✓ The extra disappears from the visible extras list immediately
+✓ The hidden count in the "Hidden (N)" collapsible section increases by 1
+✓ The hidden extra is excluded from wizard Step 2 picker
+
+---
+
+### TC-EXT-08 — Hide a custom extra
+1. → Click the EyeOff icon on a custom extra
+
+✓ The custom extra is hidden from the main list
+✓ It does not appear in the wizard Step 2 extras picker
+✓ State persists after page reload (stored in `hiddenExtraIds` in localStorage)
+
+---
+
+### TC-EXT-09 — Restore a hidden extra
+**Preconditions:** At least one extra is hidden.
+
+1. → Scroll to the "Hidden (N)" collapsible section
+2. → Expand it
+3. → Click the eye icon to restore the extra
+
+✓ The extra reappears in the main extras list
+✓ It is available again in the wizard Step 2 picker
+✓ The hidden count decreases by 1
 
 ---
 
@@ -1334,12 +1472,20 @@ Run after every release:
 - [ ] TC-CAL-05 — Click week → WeekDetailView
 - [ ] TC-WDV-02 — Swap recipe persists
 - [ ] TC-MOD-01 — Modal covers full screen
-- [ ] TC-SHP-01 — Shopping list populates
+- [ ] TC-SHP-01 — Shopping list populates for active week
 - [ ] TC-SHP-02 — Pantry toggle
-- [ ] TC-SHP-09 — Pantry preserved on rebuild
+- [ ] TC-SHP-05 — Week tab navigation
+- [ ] TC-SHP-06 — Per-week pantry independence
+- [ ] TC-SHP-07 — Pantry survives page reload
+- [ ] TC-SHP-09 — Ingredient picker — add from catalogue
+- [ ] TC-SHP-12 — Other section — add free-text item
+- [ ] TC-SHP-16 — Other section is per-week
 - [ ] TC-RCP-08 — Duplicate & edit built-in recipe
 - [ ] TC-RCP-09 — Disable built-in recipe
+- [ ] TC-RCP-12 — Hidden recipes collapsible section
 - [ ] TC-EXT-05 — Duplicate & edit built-in extra
+- [ ] TC-EXT-07 — Hide built-in extra
+- [ ] TC-EXT-09 — Restore hidden extra
 - [ ] TC-HHD-03 — Accept household invite
 - [ ] TC-SCO-01 — HouseholdSwitcher always visible
 - [ ] TC-SET-01 — Settings section ordering
