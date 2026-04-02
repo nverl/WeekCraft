@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { DayLabel, DayConfig, DayPlan, Recipe, Ingredient, WizardState, SelectedExtra } from '@/app/types';
-import { parseISOToMins, parseISODuration, getNextMonday } from '@/app/lib/weekUtils';
+import { parseISOToMins, parseISODuration, getWeekStart } from '@/app/lib/weekUtils';
 
 // Re-export for any files that import parseISODuration from this module
 export { parseISODuration };
@@ -35,7 +35,7 @@ function generatePlan(
   days: number,
   targetWeekStart: string | null,
 ): DayPlan[] {
-  const monday = targetWeekStart ? new Date(targetWeekStart) : getNextMonday();
+  const monday = targetWeekStart ? new Date(targetWeekStart) : getWeekStart(new Date());
   const plan: DayPlan[] = [];
 
   for (let i = 0; i < days; i++) {
