@@ -4,7 +4,7 @@ import { CalendarDays, ShoppingCart, Sparkles, BookOpen, Home } from 'lucide-rea
 import { useWizardStore } from '@/app/store/wizardStore';
 import { useWeekPlanStore } from '@/app/store/weekPlanStore';
 import { useRecipeStore } from '@/app/store/recipeStore';
-import { getWeekStartISO, getNextMonday } from '@/app/lib/weekUtils';
+import { getWeekStartISO } from '@/app/lib/weekUtils';
 import WizardContainer from '@/app/components/wizard/WizardContainer';
 import HomeView from '@/app/components/home/HomeView';
 import MonthCalendar from '@/app/components/calendar/MonthCalendar';
@@ -34,7 +34,7 @@ const NAV: { id: AppView; label: string; icon: React.ReactNode }[] = [
 
 export default function HomeClient({ seedRecipes }: HomeClientProps) {
   const { data: session } = useSession();
-  const { dayConfigs, people, selectedExtras, resetWizard } = useWizardStore();
+  const { dayConfigs, people, selectedExtras } = useWizardStore();
   const {
     weeks, wizardOpen, activeWeekStart, hydrated,
     saveWeek, closeWizard, openWizardForWeek,
@@ -54,7 +54,7 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
 
   // ── Wizard complete handler ───────────────────────────────────────────────
   const handleWizardComplete = (plan: DayPlan[], targetWeekStart: string | null) => {
-    const effectiveWeekStart = targetWeekStart ?? getWeekStartISO(getNextMonday());
+    const effectiveWeekStart = targetWeekStart ?? getWeekStartISO(new Date());
 
     saveWeek({
       weekStart: effectiveWeekStart,
@@ -69,11 +69,6 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
   };
 
   const handleWizardCancel = () => closeWizard();
-
-  const handleNewPlan = () => {
-    resetWizard();
-    openWizardForWeek(null);
-  };
 
   // Show month calendar (from HomeView "All weeks" link)
   const handleShowAllWeeks = () => {
@@ -133,12 +128,6 @@ export default function HomeClient({ seedRecipes }: HomeClientProps) {
           </div>
           <div className="flex items-center gap-2">
             <HouseholdSwitcher />
-            <button
-              onClick={handleNewPlan}
-              className="text-xs text-zinc-400 hover:text-zinc-600 underline cursor-pointer"
-            >
-              New plan
-            </button>
             <Link
               href="/settings"
               className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center text-white text-xs font-black hover:bg-zinc-700 transition flex-shrink-0"

@@ -84,8 +84,8 @@ function generatePlan(
     const unused = pool.filter((r) => !usedIds.includes(r.id));
     const candidates = unused.length > 0 ? unused : pool;
 
-    // Deterministic pick (rotate through candidates)
-    const recipe = candidates[i % candidates.length];
+    // Random pick (different result each time the wizard is run)
+    const recipe = candidates[Math.floor(Math.random() * candidates.length)];
 
     const effectivePeople = config.people ?? people;
     plan.push({

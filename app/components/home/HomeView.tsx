@@ -118,9 +118,19 @@ export default function HomeView({ recipes, onShowAllWeeks }: HomeViewProps) {
 
   // Stable: current week start (computed once — week won't change during session)
   const todayWeekStart = useMemo(() => getWeekStartISO(new Date()), []);
-  const weekPlan = weeks[todayWeekStart];
 
-  // Find today's day index
+  // Find the best week to display: current week → nearest upcoming → most recent past
+  const displayWeekStart = useMemo(() => {
+    if (weeks[todayWeekStart]) return todayWeekStart;
+    const keys = Object.keys(weeks).sort();
+    const upcoming = keys.find((k) => k >= todayWeekStart);
+    if (upcoming) return upcoming;
+    return keys[keys.length - 1] ?? todayWeekStart;
+  }, [weeks, todayWeekStart]);
+
+  const weekPlan = weeks[displayWeekStart];
+
+  // Find today's day index (only relevant when showing the current week)
   const todayStr = new Date().toDateString();
   const todayDayIndex = useMemo(() =>
     weekPlan?.days.findIndex((d) => new Date(d.date).toDateString() === todayStr) ?? -1,
@@ -148,7 +158,7 @@ export default function HomeView({ recipes, onShowAllWeeks }: HomeViewProps) {
 
   // Extras — backward-compat: entries may be plain strings (old data) or {id,qty}
   // Memoized so it only rebuilds when the week's extras actually change
-  const rawExtras = weeks[todayWeekStart]?.selectedExtras ?? [];
+  const rawExtras = weeks[displayWeekStart]?.selectedExtras ?? [];
   const selectedExtrasMap = useMemo(
     () => new Map<string, number>(
       rawExtras.map((e) => typeof e === 'string' ? [e, 1] : [e.id, e.qty])
@@ -379,7 +389,7 @@ export default function HomeView({ recipes, onShowAllWeeks }: HomeViewProps) {
                 >
                   {extra.emoji} {extra.qty > 1 && <span className="text-zinc-500">{extra.qty}×</span>}{extra.name}
                   <button
-                    onClick={() => toggleExtraForWeek(todayWeekStart, extra.id)}
+                    onClick={() => toggleExtraForWeek(displayWeekStart, extra.id)}
                     className="w-4 h-4 flex items-center justify-center rounded-full bg-zinc-200 hover:bg-zinc-300 text-zinc-500 cursor-pointer transition-colors"
                     aria-label={`Remove ${extra.name}`}
                   >
@@ -443,7 +453,7 @@ export default function HomeView({ recipes, onShowAllWeeks }: HomeViewProps) {
         <ExtraPickerModal
           extras={visibleExtras}
           selectedIds={selectedExtraIds}
-          onToggle={(extra) => toggleExtraForWeek(todayWeekStart, extra.id)}
+          onToggle={(extra) => toggleExtraForWeek(displayWeekStart, extra.id)}
           onAddCustom={(data) => addExtra(data)}
           onClose={() => setShowExtrasPicker(false)}
         />
